@@ -42,6 +42,14 @@ const ParabolixAuth = (function() {
             deviceId: null  // Will be locked on first login
         },
         {
+            user: 'Guest',
+            pass: 'Guest@2026',
+            role: 'guest',
+            active: true,
+            apps: [],  // No app access — can only view the dashboard
+            deviceId: null
+        },
+        {
             user: '',
             pass: '',
             role: 'user',
@@ -164,6 +172,22 @@ const ParabolixAuth = (function() {
     // LOGIN
     // ─────────────────────────────────────────────────────────────────────────
     function login(username, password) {
+        // Allow empty credentials to login as Guest
+        if (!username && !password) {
+            const guest = USERS.find(x => x.user === 'Guest' && x.active);
+            if (guest) {
+                const session = {
+                    user: guest.user,
+                    role: guest.role,
+                    apps: guest.apps,
+                    deviceId: getDeviceId(),
+                    loginTime: Date.now()
+                };
+                localStorage.setItem('pbx_session', JSON.stringify(session));
+                return { success: true, session: session };
+            }
+        }
+
         const found = USERS.find(x => x.user === username && x.pass === password);
 
         if (!found) {
