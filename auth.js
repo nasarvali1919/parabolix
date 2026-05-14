@@ -49,14 +49,6 @@ const ParabolixAuth = (function() {
             apps: [],  // No app access — can only view the dashboard
             deviceId: null
         },
-        {
-            user: '',
-            pass: '',
-            role: 'user',
-            active: true,
-            apps: [ ''],
-            deviceId: null  // Will be locked on first login
-        },
         // Add more users as needed:
         // {
         //     user: 'User2',
