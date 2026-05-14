@@ -27,8 +27,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .header{background:linear-gradient(135deg,#0D47A1,#1A237E);padding:20px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1)}
 .header h1{font-size:24px;font-weight:700}
 .header .tagline{color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px}
-.logout-btn{position:fixed;top:12px;right:14px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;z-index:200}
+.top-bar{position:fixed;top:0;right:0;padding:10px 14px;z-index:200;display:flex;gap:8px;align-items:center}
+.logout-btn{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer}
 .logout-btn:hover{background:rgba(255,255,255,0.2)}
+.device-badge{background:rgba(76,175,80,0.2);color:#4CAF50;border:1px solid rgba(76,175,80,0.3);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600}
+.admin-badge{background:rgba(255,215,0,0.2);color:#FFD700;border:1px solid rgba(255,215,0,0.3);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600}
 .container{max-width:800px;margin:0 auto;padding:24px 16px}
 .welcome{text-align:center;margin-bottom:24px}
 .welcome h2{font-size:18px;color:#90CAF9;margin-bottom:6px}
@@ -37,13 +40,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tool-card{background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px 20px;text-align:center;cursor:pointer;transition:transform 0.2s,border-color 0.2s}
 .tool-card:hover{transform:translateY(-4px);border-color:rgba(255,215,0,0.4)}
 .tool-card:active{transform:translateY(0)}
+.tool-card.locked{opacity:0.4;cursor:not-allowed}
+.tool-card.locked:hover{transform:none;border-color:rgba(255,255,255,0.1)}
 .tool-icon{font-size:36px;margin-bottom:12px}
 .tool-card h3{font-size:14px;font-weight:600;margin-bottom:6px;color:#fff}
 .tool-card p{font-size:11px;color:rgba(255,255,255,0.5);line-height:1.4}
 .tool-card .status{display:inline-block;margin-top:10px;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600}
 .status-live{background:rgba(76,175,80,0.2);color:#4CAF50}
 .status-soon{background:rgba(255,152,0,0.2);color:#FF9800}
+.status-locked{background:rgba(244,67,54,0.2);color:#F44336}
 .footer{text-align:center;padding:30px 16px;font-size:11px;color:rgba(255,255,255,0.3);border-top:1px solid rgba(255,255,255,0.05);margin-top:30px}
+
+/* Admin Panel */
+.admin-panel{background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:16px;margin-top:24px}
+.admin-panel h3{color:#FFD700;font-size:13px;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px}
+.admin-panel .device-info{font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:8px;font-family:monospace;word-break:break-all}
+.admin-panel button{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;margin:4px}
+.admin-panel button:hover{background:rgba(255,255,255,0.2)}
 </style>
 </head>
 <body>
@@ -65,7 +78,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <!-- DASHBOARD -->
 <div id="appContent" class="app-content">
-<button class="logout-btn" onclick="doLogout()">Logout</button>
+<div class="top-bar">
+    <span id="roleBadge" class="admin-badge" style="display:none">ADMIN</span>
+    <span id="trustedBadge" class="device-badge" style="display:none">TRUSTED DEVICE</span>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+</div>
 <div class="header">
     <h1>Parabolix</h1>
     <p class="tagline">Satellite Antenna Engineering Tools</p>
@@ -76,62 +93,77 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <p>Select a tool to get started</p>
     </div>
 
-    <div class="tools-grid">
-        <div class="tool-card" onclick="openTool('resolver')">
+    <div class="tools-grid" id="toolsGrid">
+        <div class="tool-card" data-app="resolver" onclick="openTool('resolver')">
             <div class="tool-icon">🔧</div>
             <h3>Resolver Alignment</h3>
             <p>Calculate resolver pin alignment adjustments from dial indicator readings</p>
             <span class="status status-live">Live</span>
         </div>
 
-        <div class="tool-card" onclick="openTool('rms')">
+        <div class="tool-card" data-app="rms" onclick="openTool('rms')">
             <div class="tool-icon">📐</div>
             <h3>RMS Surface Calculator</h3>
             <p>Parabolic reflector surface accuracy from theodolite measurements</p>
             <span class="status status-live">Live</span>
         </div>
 
-        <div class="tool-card" onclick="openTool('pattern')">
+        <div class="tool-card" data-app="pattern" onclick="openTool('pattern')">
             <div class="tool-icon">📡</div>
             <h3>Pattern Analyser</h3>
             <p>Antenna radiation pattern plotting, analysis & ITU envelope overlay</p>
             <span class="status status-live">Live</span>
         </div>
 
-        <div class="tool-card" onclick="openTool('kingpost')">
+        <div class="tool-card" data-app="kingpost" onclick="openTool('kingpost')">
             <div class="tool-icon">⚖️</div>
             <h3>Kingpost Leveling</h3>
             <p>Pedestal verticality alignment using precision bubble level or theodolite</p>
             <span class="status status-live">Live</span>
         </div>
 
-        <div class="tool-card" onclick="openTool('simulsat')">
+        <div class="tool-card" data-app="simulsat" onclick="openTool('simulsat')">
             <div class="tool-icon">🛰️</div>
             <h3>Simulsat Roll Angle</h3>
             <p>Torus antenna roll, elevation & azimuth for any location and arc</p>
             <span class="status status-live">Live</span>
         </div>
 
-        <div class="tool-card" onclick="openTool('lookangles')">
+        <div class="tool-card" data-app="lookangles" onclick="openTool('lookangles')">
             <div class="tool-icon">🌍</div>
             <h3>Look Angles</h3>
             <p>Satellite azimuth, elevation & polarization from any earth station</p>
             <span class="status status-soon">Coming Soon</span>
         </div>
     </div>
+
+    <!-- Admin Panel (visible only to admins) -->
+    <div id="adminPanel" class="admin-panel" style="display:none">
+        <h3>⚙️ Admin Panel</h3>
+        <div class="device-info" id="deviceInfo"></div>
+        <div style="margin:12px 0">
+            <button onclick="registerDevice()">📱 Register This Device as Trusted</button>
+            <button onclick="showDeviceLocks()">🔒 Show Device Locks</button>
+            <button onclick="resetAllLocks()">🔓 Reset All Device Locks</button>
+            <button onclick="showUsers()">👥 Show Users & Subscriptions</button>
+        </div>
+        <pre id="adminOutput" style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:8px;white-space:pre-wrap;display:none"></pre>
+        <div id="usersTable" style="display:none;margin-top:12px;overflow-x:auto"></div>
+    </div>
 </div>
 <div class="footer">
-    Parabolix v1.0 &mdash; Built by Shaik Nasar Vali &mdash; Satellite Antenna Engineering Tools
+    Parabolix v2.0 &mdash; Built by Shaik Nasar Vali &mdash; Satellite Antenna Engineering Tools
 </div>
 </div>
 
+<script src="auth.js"></script>
 <script>
 // Draw mini logo on login page
 (function(){
     const c = document.getElementById('loginLogo');
+    if (!c) return;
     const ctx = c.getContext('2d');
     const s = 80;
-    // Parabola
     ctx.beginPath();
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 2.5;
@@ -141,12 +173,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         if(i===-1)ctx.moveTo(x,y);else ctx.lineTo(x,y);
     }
     ctx.stroke();
-    // Focus
     ctx.beginPath();
     ctx.fillStyle='#FFD700';
     ctx.arc(s/2,s*0.4,4,0,Math.PI*2);
     ctx.fill();
-    // Glow
     const g=ctx.createRadialGradient(s/2,s*0.4,0,s/2,s*0.4,12);
     g.addColorStop(0,'rgba(255,215,0,0.4)');
     g.addColorStop(1,'transparent');
@@ -158,6 +188,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 // Tool navigation
 function openTool(tool) {
+    if (!ParabolixAuth.canAccessApp(tool)) {
+        alert('You do not have access to this tool. Contact admin.');
+        return;
+    }
     const urls = {
         resolver: './resolver/index.html',
         rms: './rms/index.html',
@@ -170,34 +204,145 @@ function openTool(tool) {
     window.location.href = urls[tool];
 }
 
-// Auth
-const USERS = [
-    { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
-    { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
-];
-
+// Login
 function doLogin() {
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
     const errEl = document.getElementById('loginError');
-    const found = USERS.find(x => x.user === u && x.pass === p);
-    if (!found) { errEl.textContent = 'Invalid username or password.'; errEl.style.display = 'block'; return; }
-    if (!found.active) { errEl.textContent = 'Account disabled. Contact admin.'; errEl.style.display = 'block'; return; }
-    sessionStorage.setItem('parabolix_auth', JSON.stringify({user: found.user, role: found.role}));
-    showApp(found.user);
+
+    const result = ParabolixAuth.login(u, p);
+    if (!result.success) {
+        errEl.textContent = result.error;
+        errEl.style.display = 'block';
+        return;
+    }
+    showApp();
 }
 
-function doLogout() { sessionStorage.removeItem('parabolix_auth'); location.reload(); }
+// Logout
+function doLogout() {
+    ParabolixAuth.logout();
+    location.reload();
+}
 
-function showApp(username) {
+// Show dashboard
+function showApp() {
+    const session = ParabolixAuth.getSession();
+    if (!session) return;
+
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appContent').style.display = 'block';
-    if (username) document.getElementById('welcomeMsg').textContent = 'Welcome, ' + username;
+
+    // Welcome message
+    const name = session.trusted ? 'Admin (Trusted Device)' : session.user;
+    document.getElementById('welcomeMsg').textContent = 'Welcome, ' + name;
+
+    // Badges
+    if (session.role === 'admin') document.getElementById('roleBadge').style.display = '';
+    if (session.trusted) document.getElementById('trustedBadge').style.display = '';
+
+    // Grey out tools user doesn't have access to
+    document.querySelectorAll('.tool-card[data-app]').forEach(card => {
+        const app = card.dataset.app;
+        if (!session.apps.includes(app) && session.role !== 'admin') {
+            card.classList.add('locked');
+            const statusEl = card.querySelector('.status');
+            if (statusEl) {
+                statusEl.className = 'status status-locked';
+                statusEl.textContent = 'No Access';
+            }
+        }
+    });
+
+    // Admin panel
+    if (session.role === 'admin') {
+        document.getElementById('adminPanel').style.display = '';
+        document.getElementById('deviceInfo').textContent = 'Device ID: ' + ParabolixAuth.getDeviceId();
+    }
 }
 
+// Admin functions
+function registerDevice() {
+    const id = ParabolixAuth.adminRegisterTrustedDevice();
+    const out = document.getElementById('adminOutput');
+    out.style.display = '';
+    out.textContent = 'YOUR DEVICE ID:\n' + id + '\n\nAdd this to TRUSTED_DEVICES array in auth.js:\n' +
+        "TRUSTED_DEVICES = [\n    '" + id + "',\n];\n\nThen push to GitHub. This device will auto-login.";
+}
+
+function showDeviceLocks() {
+    const locks = JSON.parse(localStorage.getItem('pbx_device_locks') || '{}');
+    const out = document.getElementById('adminOutput');
+    out.style.display = '';
+    if (Object.keys(locks).length === 0) {
+        out.textContent = 'No device locks registered yet.';
+    } else {
+        out.textContent = 'DEVICE LOCKS:\n' + Object.entries(locks).map(([u,d]) => '  ' + u + ' → ' + d).join('\n');
+    }
+}
+
+function resetAllLocks() {
+    if (confirm('Reset all device locks? Users will be re-locked on next login.')) {
+        localStorage.removeItem('pbx_device_locks');
+        const out = document.getElementById('adminOutput');
+        out.style.display = '';
+        out.textContent = 'All device locks cleared.';
+    }
+}
+
+// Show Users & Subscriptions table
+function showUsers() {
+    const users = ParabolixAuth.USERS;
+    const locks = JSON.parse(localStorage.getItem('pbx_device_locks') || '{}');
+    const allApps = ['resolver', 'rms', 'pattern', 'kingpost', 'simulsat', 'lookangles'];
+    const appLabels = {
+        resolver: '🔧 Resolver',
+        rms: '📐 RMS',
+        pattern: '📡 Pattern',
+        kingpost: '⚖️ Kingpost',
+        simulsat: '🛰️ Simulsat',
+        lookangles: '🌍 Look Angles'
+    };
+
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:11px;color:#fff">';
+    html += '<thead><tr style="background:rgba(255,255,255,0.1)">';
+    html += '<th style="padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.2)">User</th>';
+    html += '<th style="padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.2)">Role</th>';
+    html += '<th style="padding:8px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.2)">Status</th>';
+    html += '<th style="padding:8px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.2)">Device Locked</th>';
+    allApps.forEach(app => {
+        html += '<th style="padding:8px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.2)">' + appLabels[app] + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+
+    users.forEach(u => {
+        const isLocked = !!locks[u.user];
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">';
+        html += '<td style="padding:8px;font-weight:600">' + u.user + '</td>';
+        html += '<td style="padding:8px"><span style="background:' + (u.role === 'admin' ? 'rgba(255,215,0,0.2);color:#FFD700' : 'rgba(144,202,249,0.2);color:#90CAF9') + ';padding:2px 8px;border-radius:4px;font-size:10px">' + u.role.toUpperCase() + '</span></td>';
+        html += '<td style="padding:8px;text-align:center">' + (u.active ? '<span style="color:#4CAF50">● Active</span>' : '<span style="color:#F44336">● Disabled</span>') + '</td>';
+        html += '<td style="padding:8px;text-align:center">' + (isLocked ? '<span style="color:#FF9800">🔒 Yes</span>' : '<span style="color:rgba(255,255,255,0.3)">—</span>') + '</td>';
+        allApps.forEach(app => {
+            const hasAccess = u.role === 'admin' || u.apps.includes(app);
+            html += '<td style="padding:8px;text-align:center">' + (hasAccess ? '<span style="color:#4CAF50">✓</span>' : '<span style="color:#F44336">✗</span>') + '</td>';
+        });
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += '<p style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.4)">Total Users: ' + users.length + ' | Active: ' + users.filter(u => u.active).length + ' | Device-Locked: ' + Object.keys(locks).length + '</p>';
+
+    document.getElementById('usersTable').style.display = '';
+    document.getElementById('usersTable').innerHTML = html;
+    document.getElementById('adminOutput').style.display = 'none';
+}
+
+// Auto-login check on page load
 (function(){
-    const auth = sessionStorage.getItem('parabolix_auth');
-    if(auth){try{const d=JSON.parse(auth);const v=USERS.find(x=>x.user===d.user&&x.active);if(v){showApp(d.user);}}catch(e){}}
+    const session = ParabolixAuth.getSession();
+    if (session) {
+        showApp();
+    }
 })();
 </script>
 </body>

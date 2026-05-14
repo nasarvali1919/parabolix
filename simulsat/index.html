@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0D47A1">
 <title>Simulsat Roll Angle Calculator</title>
+<script src="../auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#E3F2FD;color:#333;font-size:14px;min-height:100vh}
@@ -485,24 +486,18 @@ function printComparison() {
     setTimeout(function() { printWin.print(); }, 500);
 }
 
-// USER AUTHENTICATION
-const USERS = [
-    { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
-    { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
-];
-
+// USER AUTHENTICATION (Centralized via auth.js)
 function doLogin() {
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
     const errEl = document.getElementById('loginError');
-    const found = USERS.find(x => x.user === u && x.pass === p);
-    if (!found) { errEl.textContent = 'Invalid username or password.'; errEl.style.display = 'block'; return; }
-    if (!found.active) { errEl.textContent = 'Account disabled. Contact admin.'; errEl.style.display = 'block'; return; }
-    sessionStorage.setItem('simulsat_auth', JSON.stringify({user: found.user, role: found.role}));
+    const result = ParabolixAuth.login(u, p);
+    if (!result.success) { errEl.textContent = result.error; errEl.style.display = 'block'; return; }
+    if (!ParabolixAuth.canAccessApp('simulsat')) { errEl.textContent = 'You do not have access to this tool.'; errEl.style.display = 'block'; return; }
     showApp();
 }
 
-function doLogout() { sessionStorage.removeItem('simulsat_auth'); location.reload(); }
+function doLogout() { ParabolixAuth.logout(); location.reload(); }
 
 function showApp() {
     document.getElementById('loginScreen').style.display = 'none';
@@ -511,8 +506,8 @@ function showApp() {
 }
 
 (function() {
-    const auth = sessionStorage.getItem('simulsat_auth');
-    if (auth) { try { const d = JSON.parse(auth); if (USERS.find(x => x.user === d.user && x.active)) { showApp(); } } catch(e) {} }
+    const session = ParabolixAuth.getSession();
+    if (session && ParabolixAuth.canAccessApp('simulsat')) { showApp(); }
 })();
 
 document.getElementById('loginPass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });

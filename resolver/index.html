@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#1565C0">
     <meta name="description" content="Resolver Pin Alignment Calculator for satellite antenna field work">
     <title>Resolver Alignment</title>
+    <script src="../auth.js"></script>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
     <style>
@@ -523,34 +524,28 @@
 
     <script>
         // ═══════════════════════════════════════════════════
-        // USER AUTHENTICATION
+        // USER AUTHENTICATION (Centralized via auth.js)
         // ═══════════════════════════════════════════════════
-        const USERS = [
-            { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
-            { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
-        ];
-
         function doLogin() {
             const u = document.getElementById('loginUser').value.trim();
             const p = document.getElementById('loginPass').value;
             const errEl = document.getElementById('loginError');
-            const found = USERS.find(x => x.user === u && x.pass === p);
-            if (!found) {
-                errEl.textContent = 'Invalid username or password.';
+            const result = ParabolixAuth.login(u, p);
+            if (!result.success) {
+                errEl.textContent = result.error;
                 errEl.style.display = 'block';
                 return;
             }
-            if (!found.active) {
-                errEl.textContent = 'Account disabled. Contact admin.';
+            if (!ParabolixAuth.canAccessApp('resolver')) {
+                errEl.textContent = 'You do not have access to this tool.';
                 errEl.style.display = 'block';
                 return;
             }
-            sessionStorage.setItem('resolver_auth', JSON.stringify({user: found.user, role: found.role}));
             showApp();
         }
 
         function doLogout() {
-            sessionStorage.removeItem('resolver_auth');
+            ParabolixAuth.logout();
             location.reload();
         }
 
@@ -559,15 +554,12 @@
             document.getElementById('appContent').style.display = 'block';
         }
 
-        // Auto-login if session exists
+        // Auto-login if session exists or trusted device
         (function() {
-            const auth = sessionStorage.getItem('resolver_auth');
-            if (auth) {
-                try {
-                    const data = JSON.parse(auth);
-                    const valid = USERS.find(x => x.user === data.user && x.active);
-                    if (valid) { showApp(); return; }
-                } catch(e) {}
+            const session = ParabolixAuth.getSession();
+            if (session && ParabolixAuth.canAccessApp('resolver')) {
+                showApp();
+                return;
             }
         })();
 
