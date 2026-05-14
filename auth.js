@@ -41,6 +41,14 @@ const ParabolixAuth = (function() {
             apps: [ 'simulsat'],
             deviceId: null  // Will be locked on first login
         },
+        {
+            user: '',
+            pass: '',
+            role: 'user',
+            active: true,
+            apps: [ ''],
+            deviceId: null  // Will be locked on first login
+        },
         // Add more users as needed:
         // {
         //     user: 'User2',
