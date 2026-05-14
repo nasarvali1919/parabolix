@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1565C0">
+    <meta name="description" content="Resolver Pin Alignment Calculator for satellite antenna field work">
+    <title>Resolver Alignment</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .login-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+        }
+        .login-box h2 { color: #1565C0; font-size: 20px; margin-bottom: 6px; }
+        .login-box p { color: #666; font-size: 13px; margin-bottom: 20px; }
+        .login-box input {
+            width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 15px; margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+        .login-box input:focus { outline: none; border-color: #1565C0; }
+        .login-box button {
+            width: 100%; padding: 13px; background: #1565C0; color: white;
+            border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+            cursor: pointer;
+        }
+        .login-box button:active { background: #0D47A1; }
+        .login-error { color: #D32F2F; font-size: 13px; margin-top: 8px; display: none; }
+        .app-content { display: none; }
+        .logout-btn {
+            position: fixed; top: 8px; right: 12px; background: #D32F2F;
+            color: white; border: none; border-radius: 6px; padding: 6px 12px;
+            font-size: 11px; font-weight: 600; cursor: pointer; z-index: 999;
+        }
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0 16px;
+        }
+        .header h1 {
+            color: #1565C0;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .header p {
+            color: #666;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card h2 {
+            font-size: 14px;
+            color: #1565C0;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .input-group {
+            margin-bottom: 14px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #1565C0;
+        }
+        .btn-calculate {
+            width: 100%;
+            padding: 14px;
+            background: #1565C0;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-calculate:active {
+            background: #0D47A1;
+        }
+        .btn-setup {
+            width: 100%;
+            padding: 12px;
+            background: #E3F2FD;
+            color: #1565C0;
+            border: 2px solid #1565C0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        .btn-setup:active {
+            background: #BBDEFB;
+        }
+        .results { display: none; }
+        .results.visible { display: block; }
+        .result-section {
+            margin-bottom: 16px;
+        }
+        .result-section h3 {
+            font-size: 13px;
+            color: #1565C0;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+        }
+        .result-row .label { color: #555; }
+        .result-row .value { font-weight: 600; color: #0D47A1; }
+        .error-msg {
+            color: #d32f2f;
+            font-weight: 500;
+            text-align: center;
+            padding: 12px;
+        }
+        .install-banner {
+            display: none;
+            background: #E3F2FD;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            text-align: center;
+            font-size: 13px;
+            color: #1565C0;
+            cursor: pointer;
+        }
+        .install-banner.visible { display: block; }
+        .footer {
+            text-align: center;
+            padding: 16px 0;
+            font-size: 11px;
+            color: #999;
+        }
+
+        /* Setup Guide Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .modal-overlay.visible { display: flex; align-items: flex-start; justify-content: center; }
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            margin: 20px auto;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px; right: 16px;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            border: none;
+            background: none;
+            line-height: 1;
+        }
+        .modal h2 {
+            color: #1565C0;
+            font-size: 18px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .modal h3 {
+            color: #1565C0;
+            font-size: 14px;
+            margin: 16px 0 8px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+        .modal h3:first-of-type { border-top: none; padding-top: 0; }
+        .modal p, .modal li {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #444;
+        }
+        .modal ul, .modal ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+        .modal li { margin-bottom: 6px; }
+        .diagram {
+            margin: 16px 0;
+            text-align: center;
+        }
+        .diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+        .note-box {
+            background: #FFF3E0;
+            border-left: 4px solid #FF9800;
+            padding: 10px 12px;
+            border-radius: 4px;
+            margin: 12px 0;
+            font-size: 12px;
+            color: #555;
+        }
+        .rule-box {
+            background: #E8F5E9;
+            border-left: 4px solid #4CAF50;
+            padding: 10px 12px;
+            border-radius: 4px;
+            margin: 12px 0;
+            font-size: 13px;
+            color: #2E7D32;
+            font-weight: 500;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 8px;
+            border: 2px solid #1565C0;
+            background: #fff;
+            color: #1565C0;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+        .tab-btn.active {
+            background: #1565C0;
+            color: #fff;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <h2>🔧 Resolver Alignment</h2>
+            <p>Enter credentials to continue</p>
+            <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+            <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+            <button onclick="doLogin()">LOGIN</button>
+            <p class="login-error" id="loginError"></p>
+        </div>
+    </div>
+
+    <!-- APP CONTENT (hidden until login) -->
+    <div id="appContent" class="app-content">
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+    <div class="container">
+        <div class="header">
+            <h1>Resolver Pin Alignment</h1>
+            <p>Calculator</p>
+        </div>
+
+        <div id="installBanner" class="install-banner" onclick="installApp()">
+            📲 Tap to install as app on your phone
+        </div>
+
+        <button class="btn-setup" onclick="openSetupGuide()">📐 Setup Guide — Which gauge is A / B?</button>
+
+        <div class="card">
+            <h2>Inputs</h2>
+            <div class="input-group">
+                <label for="inputA">A (dial reading difference)</label>
+                <input type="number" id="inputA" value="9" step="any" inputmode="decimal">
+            </div>
+            <div class="input-group">
+                <label for="inputB">B (dial reading difference)</label>
+                <input type="number" id="inputB" value="8" step="any" inputmode="decimal">
+            </div>
+            <div class="input-group">
+                <label for="inputQ">Angle Q — resolver pin spacing (°)</label>
+                <input type="number" id="inputQ" value="45" step="any" inputmode="decimal">
+            </div>
+            <button class="btn-calculate" onclick="calculate()">CALCULATE</button>
+        </div>
+
+        <div id="results" class="results">
+            <div class="card">
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Engineer: Shaik Nasar Vali<br>
+            v1.0 — Works offline
+        </div>
+    </div>
+    </div><!-- end app-content -->
+
+    <!-- Setup Guide Modal -->
+    <div id="setupModal" class="modal-overlay" onclick="closeIfOverlay(event)">
+        <div class="modal">
+            <button class="modal-close" onclick="closeSetupGuide()">&times;</button>
+            <h2>📐 Dial Gauge Setup Guide</h2>
+
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('el')">EL Axis</button>
+                <button class="tab-btn" onclick="switchTab('az')">AZ Axis</button>
+                <button class="tab-btn" onclick="switchTab('rule')">A/B Rule</button>
+            </div>
+
+            <!-- ELEVATION TAB -->
+            <div id="tab-el" class="tab-content active">
+                <h3>Elevation Axis Setup</h3>
+                <p>View: Standing behind the dish, looking at the resolver coupling from the back.</p>
+
+                <div class="diagram">
+                    <svg width="300" height="260" viewBox="0 0 300 260">
+                        <!-- Resolver coupling (circle) -->
+                        <circle cx="150" cy="130" r="50" fill="#e0e0e0" stroke="#666" stroke-width="2"/>
+                        <!-- Bolt holes -->
+                        <circle cx="150" cy="90" r="6" fill="#888"/>
+                        <circle cx="185" cy="110" r="6" fill="#888"/>
+                        <circle cx="185" cy="150" r="6" fill="#888"/>
+                        <circle cx="150" cy="170" r="6" fill="#888"/>
+                        <circle cx="115" cy="150" r="6" fill="#888"/>
+                        <circle cx="115" cy="110" r="6" fill="#888"/>
+                        <!-- Center -->
+                        <circle cx="150" cy="130" r="4" fill="#333"/>
+
+                        <!-- Gauge A - Horizontal (left side) -->
+                        <line x1="100" y1="130" x2="60" y2="130" stroke="#F57F17" stroke-width="3"/>
+                        <rect x="20" y="112" width="42" height="36" rx="18" fill="#FDD835" stroke="#F57F17" stroke-width="2"/>
+                        <text x="41" y="135" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">A</text>
+                        <!-- Arrow showing plunger direction -->
+                        <polygon points="98,130 88,125 88,135" fill="#F57F17"/>
+
+                        <!-- Gauge B - Vertical (bottom) -->
+                        <line x1="150" y1="180" x2="150" y2="220" stroke="#1565C0" stroke-width="3"/>
+                        <rect x="129" y="220" width="42" height="36" rx="18" fill="#fff" stroke="#1565C0" stroke-width="2"/>
+                        <text x="150" y="243" text-anchor="middle" font-size="11" font-weight="bold" fill="#1565C0">B</text>
+                        <!-- Arrow showing plunger direction -->
+                        <polygon points="150,182 145,192 155,192" fill="#1565C0"/>
+
+                        <!-- Axis label -->
+                        <text x="150" y="20" text-anchor="middle" font-size="11" fill="#666">↑ UP (dish moves up)</text>
+                        <text x="280" y="130" text-anchor="end" font-size="11" fill="#666">→ EAST</text>
+
+                        <!-- Rotation arrow -->
+                        <path d="M 200,70 A 60,60 0 0,1 230,100" fill="none" stroke="#4CAF50" stroke-width="2" stroke-dasharray="4,2"/>
+                        <polygon points="230,100 225,90 235,93" fill="#4CAF50"/>
+                        <text x="230" y="70" font-size="10" fill="#4CAF50">CW</text>
+                    </svg>
+                </div>
+
+                <div class="rule-box">
+                    <strong>A</strong> = Horizontal gauge (plunger points toward coupling)<br>
+                    <strong>B</strong> = Vertical gauge (plunger points up toward coupling)
+                </div>
+
+                <p><strong>CW rotation:</strong> As seen from behind the dish = dish moves UP in elevation.</p>
+            </div>
+
+            <!-- AZIMUTH TAB -->
+            <div id="tab-az" class="tab-content">
+                <h3>Azimuth Axis Setup</h3>
+                <p>View: Looking DOWN at the resolver coupling from above.</p>
+
+                <div class="diagram">
+                    <svg width="300" height="280" viewBox="0 0 300 280">
+                        <!-- Resolver coupling (circle) -->
+                        <circle cx="150" cy="140" r="50" fill="#e0e0e0" stroke="#666" stroke-width="2"/>
+                        <!-- Bolt holes -->
+                        <circle cx="150" cy="100" r="6" fill="#888"/>
+                        <circle cx="183" cy="115" r="6" fill="#888"/>
+                        <circle cx="183" cy="165" r="6" fill="#888"/>
+                        <circle cx="150" cy="180" r="6" fill="#888"/>
+                        <circle cx="117" cy="165" r="6" fill="#888"/>
+                        <circle cx="117" cy="115" r="6" fill="#888"/>
+                        <!-- Center -->
+                        <circle cx="150" cy="140" r="4" fill="#333"/>
+
+                        <!-- Gauge A - Upper left -->
+                        <line x1="115" y1="105" x2="70" y2="70" stroke="#F57F17" stroke-width="3"/>
+                        <rect x="30" y="50" width="42" height="36" rx="18" fill="#FDD835" stroke="#F57F17" stroke-width="2"/>
+                        <text x="51" y="73" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">A</text>
+                        <polygon points="113,107 105,98 107,110" fill="#F57F17"/>
+
+                        <!-- Gauge B - Lower right -->
+                        <line x1="185" y1="165" x2="230" y2="210" stroke="#1565C0" stroke-width="3"/>
+                        <rect x="215" y="210" width="42" height="36" rx="18" fill="#fff" stroke="#1565C0" stroke-width="2"/>
+                        <text x="236" y="233" text-anchor="middle" font-size="11" font-weight="bold" fill="#1565C0">B</text>
+                        <polygon points="187,167 192,175 182,177" fill="#1565C0"/>
+
+                        <!-- Compass -->
+                        <text x="150" y="20" text-anchor="middle" font-size="11" fill="#666">↑ NORTH</text>
+                        <text x="285" y="140" text-anchor="end" font-size="11" fill="#666">EAST →</text>
+
+                        <!-- Rotation arrow -->
+                        <path d="M 200,75 A 55,55 0 0,1 225,110" fill="none" stroke="#4CAF50" stroke-width="2" stroke-dasharray="4,2"/>
+                        <polygon points="225,110 220,100 230,103" fill="#4CAF50"/>
+                        <text x="232" y="80" font-size="10" fill="#4CAF50">CW</text>
+
+                        <!-- View label -->
+                        <text x="150" y="270" text-anchor="middle" font-size="11" fill="#999">View: Looking DOWN from above</text>
+                    </svg>
+                </div>
+
+                <div class="rule-box">
+                    <strong>A</strong> = First gauge that shows MAX deflection on CW rotation<br>
+                    <strong>B</strong> = The other gauge reading at same rotation
+                </div>
+
+                <p><strong>CW rotation:</strong> As seen from above = antenna rotates clockwise (like a clock on the ground).</p>
+            </div>
+
+            <!-- A/B RULE TAB -->
+            <div id="tab-rule" class="tab-content">
+                <h3>Universal A/B Rule</h3>
+
+                <div class="rule-box">
+                    Rotate CW by one pin spacing (Q°).<br>
+                    <strong>A = gauge with LARGER deflection</strong><br>
+                    <strong>B = gauge with SMALLER deflection</strong>
+                </div>
+
+                <h3>Step-by-Step Procedure</h3>
+                <ol>
+                    <li>Mount both gauges at 90° to each other on the resolver coupling</li>
+                    <li>Zero both gauges</li>
+                    <li>Jog the axis <strong>CW</strong> (from your defined viewpoint) by one pin spacing</li>
+                    <li>Read both gauges</li>
+                    <li><strong>A</strong> = the one that moved MORE</li>
+                    <li><strong>B</strong> = the one that moved LESS</li>
+                    <li>Record the difference (after − before) with sign</li>
+                </ol>
+
+                <h3>Sign Convention</h3>
+                <ul>
+                    <li><strong>Positive (+)</strong> = needle moved CW on the dial face (gauge compressed / plunger pushed in)</li>
+                    <li><strong>Negative (−)</strong> = needle moved CCW on the dial face (gauge extended / plunger pulled out)</li>
+                </ul>
+
+                <div class="note-box">
+                    <strong>⚠️ CW/CCW View Confusion:</strong><br>
+                    Always define CW from ONE viewpoint:<br>
+                    • <strong>EL axis:</strong> Stand behind dish → CW = dish goes UP<br>
+                    • <strong>AZ axis:</strong> Look down from above → CW = clockwise on ground<br><br>
+                    If you look from the opposite side, CW appears as CCW. Pick one side and stick with it.
+                </div>
+
+                <h3>Quick Reference</h3>
+                <div class="diagram">
+                    <svg width="280" height="120" viewBox="0 0 280 120">
+                        <!-- Gauge A -->
+                        <rect x="10" y="20" width="120" height="80" rx="10" fill="#FFF8E1" stroke="#F57F17" stroke-width="2"/>
+                        <text x="70" y="45" text-anchor="middle" font-size="13" font-weight="bold" fill="#F57F17">GAUGE A</text>
+                        <text x="70" y="65" text-anchor="middle" font-size="11" fill="#555">Larger deflection</text>
+                        <text x="70" y="85" text-anchor="middle" font-size="11" fill="#555">on CW rotation</text>
+
+                        <!-- Gauge B -->
+                        <rect x="150" y="20" width="120" height="80" rx="10" fill="#E3F2FD" stroke="#1565C0" stroke-width="2"/>
+                        <text x="210" y="45" text-anchor="middle" font-size="13" font-weight="bold" fill="#1565C0">GAUGE B</text>
+                        <text x="210" y="65" text-anchor="middle" font-size="11" fill="#555">Smaller deflection</text>
+                        <text x="210" y="85" text-anchor="middle" font-size="11" fill="#555">on CW rotation</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════
+        // USER AUTHENTICATION
+        // ═══════════════════════════════════════════════════
+        const USERS = [
+            { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
+            { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
+        ];
+
+        function doLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value;
+            const errEl = document.getElementById('loginError');
+            const found = USERS.find(x => x.user === u && x.pass === p);
+            if (!found) {
+                errEl.textContent = 'Invalid username or password.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (!found.active) {
+                errEl.textContent = 'Account disabled. Contact admin.';
+                errEl.style.display = 'block';
+                return;
+            }
+            sessionStorage.setItem('resolver_auth', JSON.stringify({user: found.user, role: found.role}));
+            showApp();
+        }
+
+        function doLogout() {
+            sessionStorage.removeItem('resolver_auth');
+            location.reload();
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+        }
+
+        // Auto-login if session exists
+        (function() {
+            const auth = sessionStorage.getItem('resolver_auth');
+            if (auth) {
+                try {
+                    const data = JSON.parse(auth);
+                    const valid = USERS.find(x => x.user === data.user && x.active);
+                    if (valid) { showApp(); return; }
+                } catch(e) {}
+            }
+        })();
+
+        // Allow Enter key to login
+        document.getElementById('loginPass').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doLogin();
+        });
+
+        // Setup Guide Modal
+        function openSetupGuide() {
+            document.getElementById('setupModal').classList.add('visible');
+        }
+        function closeSetupGuide() {
+            document.getElementById('setupModal').classList.remove('visible');
+        }
+        function closeIfOverlay(e) {
+            if (e.target === document.getElementById('setupModal')) closeSetupGuide();
+        }
+
+        // Tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Calculator
+        function calculate() {
+            const A = parseFloat(document.getElementById('inputA').value);
+            const B = parseFloat(document.getElementById('inputB').value);
+            const Q = parseFloat(document.getElementById('inputQ').value);
+
+            const resultsDiv = document.getElementById('results');
+            const content = document.getElementById('resultsContent');
+
+            if (isNaN(A) || isNaN(B) || isNaN(Q)) {
+                showError(content, 'Enter valid numbers');
+                resultsDiv.classList.add('visible');
+                return;
+            }
+            if (Q === 0) { showError(content, 'Angle Q cannot be 0'); resultsDiv.classList.add('visible'); return; }
+            if (A === 0) { showError(content, 'A cannot be 0'); resultsDiv.classList.add('visible'); return; }
+
+            // Core calculations
+            const D = Math.sqrt(A * A + B * B);
+            const Q_rad = Q * Math.PI / 180;
+            const denom = Math.sqrt(2.0 - 2.0 * Math.cos(Q_rad));
+            if (denom === 0) { showError(content, 'Invalid angle'); resultsDiv.classList.add('visible'); return; }
+
+            const error_mm = D / denom / 100.0;
+            const error_inch = error_mm / 10.0;
+            const R = error_mm * 100.0;
+
+            // Quadratic for Y
+            const K = (A * A + B * B) / (2.0 * A);
+            const qa = (A * A + B * B) / (A * A);
+            const qb = -2.0 * B * K / A;
+            const qc = K * K - R * R;
+
+            const discriminant = qb * qb - 4.0 * qa * qc;
+            if (discriminant < 0) {
+                showError(content, 'No real solution (discriminant < 0)');
+                resultsDiv.classList.add('visible');
+                return;
+            }
+
+            const sqrt_disc = Math.sqrt(discriminant);
+
+            const Y_cw = (-qb - sqrt_disc) / (2.0 * qa);
+            const X_cw = Math.sqrt(Math.max(0, R * R - Y_cw * Y_cw));
+
+            const Y_ccw = (-qb + sqrt_disc) / (2.0 * qa);
+            const X_ccw = Math.sqrt(Math.max(0, R * R - Y_ccw * Y_ccw));
+
+            // Quadrant-based sign adjustment (matches Excel exactly)
+            let adj_A_cw, adj_B_cw, adj_A_ccw, adj_B_ccw;
+
+            if (A > 0 && B > 0) {
+                adj_A_cw = Math.round(-Math.abs(X_cw));
+                adj_B_cw = Math.round(Math.abs(Y_cw));
+                adj_A_ccw = Math.round(Math.abs(X_ccw));
+                adj_B_ccw = Math.round(-Math.abs(Y_ccw));
+            } else if (A > 0 && B < 0) {
+                adj_A_cw = Math.round(Math.abs(X_cw));
+                adj_B_cw = Math.round(Math.abs(Y_cw));
+                adj_A_ccw = Math.round(-Math.abs(X_ccw));
+                adj_B_ccw = Math.round(-Math.abs(Y_ccw));
+            } else if (A < 0 && B > 0) {
+                adj_A_cw = Math.round(-Math.abs(X_ccw));
+                adj_B_cw = Math.round(-Math.abs(Y_ccw));
+                adj_A_ccw = Math.round(Math.abs(X_cw));
+                adj_B_ccw = Math.round(Math.abs(Y_cw));
+            } else {
+                adj_A_cw = Math.round(Math.abs(X_ccw));
+                adj_B_cw = Math.round(-Math.abs(Y_ccw));
+                adj_A_ccw = Math.round(-Math.abs(X_cw));
+                adj_B_ccw = Math.round(Math.abs(Y_cw));
+            }
+
+            // Render results
+            let html = '';
+            html += section('Measurements', [
+                ['Distance D', D.toFixed(4)],
+                ['Error', error_mm.toFixed(4) + ' mm'],
+                ['Error', error_inch.toFixed(4) + ' inch'],
+                ['Radius R', R.toFixed(4)]
+            ]);
+            html += section('CW Adjustment', [
+                ['Y (CW)', Y_cw.toFixed(4)],
+                ['X (CW)', X_cw.toFixed(4)],
+                ['Adjust A', adj_A_cw],
+                ['Adjust B', adj_B_cw]
+            ]);
+            html += section('CCW Adjustment', [
+                ['Y (CCW)', Y_ccw.toFixed(4)],
+                ['X (CCW)', X_ccw.toFixed(4)],
+                ['Adjust A', adj_A_ccw],
+                ['Adjust B', adj_B_ccw]
+            ]);
+            html += section('Summary', [
+                ['CW', `A=${adj_A_cw}, B=${adj_B_cw}`],
+                ['CCW', `A=${adj_A_ccw}, B=${adj_B_ccw}`]
+            ]);
+
+            content.innerHTML = html;
+            resultsDiv.classList.add('visible');
+        }
+
+        function section(title, rows) {
+            let html = `<div class="result-section"><h3>${title}</h3>`;
+            for (const [label, value] of rows) {
+                html += `<div class="result-row"><span class="label">${label}</span><span class="value">${value}</span></div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function showError(el, msg) {
+            el.innerHTML = `<p class="error-msg">⚠️ ${msg}</p>`;
+        }
+
+        // Auto-calculate on load
+        window.addEventListener('load', calculate);
+
+        // PWA Install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').classList.add('visible');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    document.getElementById('installBanner').classList.remove('visible');
+                });
+            }
+        }
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>

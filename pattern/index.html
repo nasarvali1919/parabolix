@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1565C0">
+<title>Pattern Analyser</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f4f8;color:#333;font-size:14px}
+.header{background:#1565C0;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:700}
+.header .ver{font-size:11px;opacity:.8}
+.container{max-width:1500px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.07)}
+.card h2{font-size:13px;color:#1565C0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.row label{font-size:12px;color:#555;font-weight:500;min-width:70px}
+select,input[type="number"],input[type="text"]{padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px}
+select:focus,input:focus{outline:none;border-color:#1565C0}
+.btn{padding:9px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn:active{opacity:.7}
+.btn-primary{background:#1565C0;color:#fff}
+.btn-green{background:#2E7D32;color:#fff}
+.btn-orange{background:#E65100;color:#fff}
+.btn-red{background:#C62828;color:#fff}
+.btn-sm{padding:6px 10px;font-size:12px}
+.top-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chk-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.chk-row label{min-width:auto;font-size:12px}
+.results-box{background:#f9f9f9;border-radius:8px;padding:12px;font-family:Consolas,monospace;font-size:11px;white-space:pre-wrap;max-height:250px;overflow-y:auto;margin-top:8px}
+.plot-box{width:100%;height:480px}
+.status{font-size:11px;color:#2E7D32;margin-top:4px}
+.fname{font-size:11px;color:#2E7D32;margin-left:8px}
+.settings-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.sr-card{display:inline-block;text-align:center;background:#f8f9fa;border:2px solid #e0e0e0;border-radius:10px;padding:12px 20px;min-width:140px}
+.sr-card .pos{font-size:11px;color:#1565C0;font-weight:700}
+.sr-card .val{font-size:22px;font-weight:700;margin:4px 0}
+.sr-card .dir{font-size:12px;font-weight:600}
+.dir-up{color:#1B5E20}
+.dir-down{color:#B71C1C}
+.hidden{display:none}
+.sat-list{max-height:150px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;padding:4px;font-size:12px}
+.sat-item{padding:3px 6px;cursor:pointer;border-radius:4px}
+.sat-item:hover{background:#E3F2FD}
+.sat-item.selected{background:#1565C0;color:#fff}
+@media(max-width:900px){.top-grid{grid-template-columns:1fr}}
+/* Login Screen */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.login-box{background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:360px;width:100%;text-align:center}
+.login-box h2{color:#BF360C;font-size:20px;margin-bottom:6px}
+.login-box p{color:#666;font-size:13px;margin-bottom:20px}
+.login-box input{width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;margin-bottom:12px}
+.login-box input:focus{outline:none;border-color:#BF360C}
+.login-box button{width:100%;padding:13px;background:#BF360C;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
+.login-box button:active{background:#8E2400}
+.login-error{color:#D32F2F;font-size:13px;margin-top:8px;display:none}
+.app-content{display:none}
+.logout-btn{position:fixed;top:10px;right:12px;background:#D32F2F;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;z-index:200}
+</style>
+</head>
+<body>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-screen">
+<div class="login-box">
+<h2>📡 Pattern Analyser</h2>
+<p>Enter credentials to continue</p>
+<input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+<input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+<button onclick="doLogin()">LOGIN</button>
+<p class="login-error" id="loginError"></p>
+</div>
+</div>
+<!-- APP CONTENT -->
+<div id="appContent" class="app-content">
+<button class="logout-btn" onclick="doLogout()">Logout</button>
+<div class="header"><div><h1>Pattern Analyser</h1></div><div class="ver">PWA v1.0</div></div>
+<div class="container">
+
+<!-- DATA ENTRY -->
+<div class="card">
+<h2>Project Information</h2>
+<div class="settings-row">
+<div class="row"><label>Engineer:</label><input type="text" id="engineer" value="Shaik Nasar Vali" style="width:160px"></div>
+<div class="row"><label>Customer:</label><input type="text" id="customer" value="" style="width:160px" placeholder="Enter customer"></div>
+<div class="row"><label>Site Address:</label><input type="text" id="siteAddr" value="" style="width:200px" placeholder="Enter site"></div>
+<div class="row"><label>Satellite:</label><input type="text" id="satName" value="" style="width:160px" placeholder="Select below"></div>
+</div>
+</div>
+
+<!-- LOOK ANGLES -->
+<div class="card">
+<h2>Look Angles (Satellite Elevation for Secant)</h2>
+<div class="settings-row">
+<div class="row"><label>Latitude:</label><input type="number" id="siteLat" step="any" style="width:90px" placeholder="e.g. 25.2"></div>
+<div class="row"><label>Longitude:</label><input type="number" id="siteLon" step="any" style="width:90px" placeholder="e.g. 55.3"></div>
+<div class="row"><label>Sat Slot (°E):</label><input type="number" id="satSlot" step="any" style="width:80px" placeholder="e.g. 26"></div>
+<button class="btn btn-green btn-sm" onclick="calcLookAngles()">Calculate El</button>
+<span class="status" id="laResult"></span>
+</div>
+<div class="row" style="margin-top:6px">
+<label>Quick Sat:</label>
+<select id="satSelect" onchange="onSatSelect()" style="width:250px">
+<option value="">-- Select satellite --</option>
+</select>
+</div>
+</div>
+
+<!-- SETTINGS -->
+<div class="card">
+<h2>Plot Settings</h2>
+<div class="settings-row">
+<div class="row"><label>AZ Sweep:</label><input type="number" id="azSweep" value="9" step="any" style="width:65px"></div>
+<div class="row"><label>EL Sweep:</label><input type="number" id="elSweep" value="9" step="any" style="width:65px"></div>
+<div class="chk-row"><input type="checkbox" id="useGenX" checked><label>Gen X</label></div>
+<div class="row"><label>X Grid:</label><input type="number" id="xGrid" value="1" step="any" style="width:55px"></div>
+<div class="row"><label>Y Grid:</label><input type="number" id="yGrid" value="5" step="1" style="width:55px"></div>
+<div class="row"><label>D (m):</label><input type="number" id="ituD" value="7.6" step="any" style="width:60px"></div>
+<div class="row"><label>f (GHz):</label><input type="number" id="ituF" value="12.0" step="any" style="width:60px"></div>
+<div class="row"><label>Gain:</label><input type="number" id="ituG0" value="0" step="any" style="width:60px" title="0=auto"></div>
+<div class="row"><label>ITU:</label><select id="ituFormula"><option value="S.465">S.465</option><option value="S.580">S.580</option></select></div>
+<div class="row"><label>Range:</label><input type="number" id="ituRange" value="" step="any" style="width:60px" placeholder="auto"></div>
+</div>
+<div class="settings-row" style="margin-top:6px">
+<div class="chk-row"><input type="checkbox" id="showSecant"><label>Secant</label></div>
+<div class="row"><label>El (°):</label><input type="number" id="secantEl" value="30" step="any" style="width:60px"></div>
+<div class="chk-row"><input type="checkbox" id="show3db" checked><label>3dB</label></div>
+<div class="chk-row"><input type="checkbox" id="show10db" checked><label>10dB</label></div>
+<div class="chk-row"><input type="checkbox" id="showDip" checked><label>Null</label></div>
+<div class="chk-row"><input type="checkbox" id="showSL" checked><label>SL</label></div>
+<div class="chk-row"><input type="checkbox" id="showITU" checked><label>ITU</label></div>
+</div>
+</div>
+
+<!-- AZ / EL panels -->
+<div class="top-grid">
+<div class="card">
+<h2>Azimuth Cut</h2>
+<div class="row"><input type="file" id="azFile" accept=".csv,.xlsx,.xls"><span class="fname" id="azFname"></span></div>
+<div class="row"><label>Y Col:</label><select id="azYCol"></select></div>
+<div class="status" id="azStatus"></div>
+<button class="btn btn-primary btn-sm" onclick="plotCut('az')">Plot Azimuth</button>
+<div class="plot-box" id="azPlot"></div>
+<div class="results-box" id="azResults">Load AZ file and click Plot.</div>
+</div>
+<div class="card">
+<h2>Elevation Cut</h2>
+<div class="row"><input type="file" id="elFile" accept=".csv,.xlsx,.xls"><span class="fname" id="elFname"></span></div>
+<div class="row"><label>Y Col:</label><select id="elYCol"></select></div>
+<div class="status" id="elStatus"></div>
+<button class="btn btn-primary btn-sm" onclick="plotCut('el')">Plot Elevation</button>
+<div class="plot-box" id="elPlot"></div>
+<div class="results-box" id="elResults">Load EL file and click Plot.</div>
+</div>
+</div>
+
+<!-- COMBINED GAIN -->
+<div class="card">
+<h2>Gain Calculations</h2>
+<div class="results-box" id="combinedResults">Plot both AZ and EL to see combined gain.</div>
+</div>
+
+<!-- SUBREFLECTOR -->
+<div class="card">
+<h2>Subreflector Adjustment</h2>
+<div class="settings-row">
+<div class="row"><label>AZ Left:</label><input type="number" id="srAzL" step="any" style="width:75px"></div>
+<div class="row"><label>AZ Right:</label><input type="number" id="srAzR" step="any" style="width:75px"></div>
+<div class="row"><label>EL Left:</label><input type="number" id="srElL" step="any" style="width:75px"></div>
+<div class="row"><label>EL Right:</label><input type="number" id="srElR" step="any" style="width:75px"></div>
+<div class="row"><label>Band:</label><select id="srBand"><option value="Ka">Ka</option><option value="Ku">Ku</option><option value="C" selected>C</option><option value="Ex C">Ex C</option></select></div>
+<div class="row"><label>Type:</label><select id="srType"><option value="Convex">Convex</option><option value="Concave">Concave</option></select></div>
+</div>
+<div class="settings-row" style="margin-top:8px">
+<button class="btn btn-orange btn-sm" onclick="calcSubreflector()">Calculate</button>
+<button class="btn btn-green btn-sm" onclick="autofillSR()">Autofill from Plots</button>
+<button class="btn btn-sm" style="background:#7B1FA2;color:#fff" onclick="toggleFormulae()">Show All Formulae</button>
+<button class="btn btn-red btn-sm" onclick="exportPDF()">Export PDF</button>
+</div>
+<!-- Results cards -->
+<div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap" id="srCards"></div>
+<!-- Formulae (hidden by default) -->
+<div class="hidden" id="srFormulae">
+<div class="results-box" id="srDetail"></div>
+</div>
+</div>
+
+</div>
+<script src="plot.js"></script>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+
+// ═══════════════════════════════════════════════════════════
+// USER AUTHENTICATION
+// ═══════════════════════════════════════════════════════════
+const USERS = [
+    { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
+    { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
+];
+
+function doLogin() {
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    const found = USERS.find(x => x.user === u && x.pass === p);
+    if (!found) { errEl.textContent = 'Invalid username or password.'; errEl.style.display = 'block'; return; }
+    if (!found.active) { errEl.textContent = 'Account disabled. Contact admin.'; errEl.style.display = 'block'; return; }
+    sessionStorage.setItem('pattern_auth', JSON.stringify({user: found.user, role: found.role}));
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+}
+
+function doLogout() {
+    sessionStorage.removeItem('pattern_auth');
+    location.reload();
+}
+
+(function() {
+    const auth = sessionStorage.getItem('pattern_auth');
+    if (auth) {
+        try {
+            const data = JSON.parse(auth);
+            const valid = USERS.find(x => x.user === data.user && x.active);
+            if (valid) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                return;
+            }
+        } catch(e) {}
+    }
+})();
+</script>
+</div><!-- end appContent -->
+</body>
+</html>

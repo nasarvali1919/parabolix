@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#37474F">
+<title>Kingpost Leveling Guide</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ECEFF1;color:#333;font-size:14px;min-height:100vh}
+/* Login */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.login-box{background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:360px;width:100%;text-align:center}
+.login-box h2{color:#37474F;font-size:20px;margin-bottom:6px}
+.login-box p{color:#666;font-size:13px;margin-bottom:20px}
+.login-box input{width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;margin-bottom:12px}
+.login-box input:focus{outline:none;border-color:#37474F}
+.login-box button{width:100%;padding:13px;background:#37474F;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
+.login-box button:active{background:#263238}
+.login-error{color:#D32F2F;font-size:13px;margin-top:8px;display:none}
+.app-content{display:none}
+.logout-btn{position:fixed;top:10px;right:12px;background:#D32F2F;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;z-index:200}
+.header{background:#37474F;color:#fff;padding:12px 16px;text-align:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:700}
+.header p{font-size:11px;opacity:.7;margin-top:2px}
+.container{max-width:520px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:12px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card h2{font-size:13px;color:#37474F;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #ECEFF1}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.row label{font-size:12px;color:#555;font-weight:600;min-width:110px}
+select,input[type="number"]{padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;max-width:180px}
+select:focus,input:focus{outline:none;border-color:#1565C0}
+.btn{padding:12px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
+.btn:active{opacity:.7}
+.btn-calc{background:#2E7D32;color:#fff;font-size:16px;padding:14px}
+.result-box{background:#f5f5f5;border-radius:10px;padding:16px;margin-top:12px}
+.pass{background:#E8F5E9;border:2px solid #4CAF50}
+.fail{background:#FFEBEE;border:2px solid #D32F2F}
+.result-big{font-size:20px;font-weight:700;text-align:center;margin:8px 0}
+.green{color:#2E7D32}
+.red{color:#D32F2F}
+.detail{font-size:12px;color:#555;margin-top:8px;line-height:1.7}
+.detail b{color:#333}
+.spec-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.spec-std{background:#E3F2FD;color:#1565C0}
+.spec-ttc{background:#FCE4EC;color:#C62828}
+.step-guide{background:#FFF8E1;border-left:4px solid #FF9800;padding:12px;border-radius:0 8px 8px 0;margin:10px 0;font-size:12px;line-height:1.7}
+.adjust-box{padding:14px;border-radius:8px;margin:10px 0;font-size:13px;line-height:1.7}
+.adjust-pass{background:#E8F5E9;border-left:4px solid #4CAF50}
+.adjust-fail{background:#FFF3E0;border-left:4px solid #E65100}
+.reading-grid{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;margin:12px 0}
+.reading-grid label{font-size:13px;font-weight:600;color:#37474F}
+.reading-grid input{padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;text-align:center}
+.pos-dot{display:inline-block;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:10px;font-weight:700;color:#fff;margin-right:4px;vertical-align:middle}
+.p-c{background:#1565C0}
+.p-1{background:#E65100}
+.p-2{background:#6A1B9A}
+.info-text{font-size:11px;color:#777;margin-top:6px;font-style:italic}
+.tabs{display:flex;gap:4px;margin-bottom:12px}
+.tab{flex:1;padding:10px;text-align:center;border:2px solid #e0e0e0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#555}
+.tab.active{border-color:#37474F;background:#37474F;color:#fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.formula{background:#f5f5f5;padding:12px;border-radius:8px;font-family:Consolas,monospace;font-size:11px;margin:8px 0;line-height:1.6;white-space:pre-wrap}
+.diagram{text-align:center;margin:12px 0}
+.legend{font-size:11px;color:#555;margin-top:8px;text-align:center}
+.scenario{background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin:8px 0;font-size:12px;line-height:1.6}
+.scenario b{color:#E65100}
+</style>
+</head>
+<body>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-screen">
+<div class="login-box">
+<h2>🔧 Kingpost Leveling</h2>
+<p>Enter credentials to continue</p>
+<input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+<input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+<button onclick="doLogin()">LOGIN</button>
+<p class="login-error" id="loginError"></p>
+</div>
+</div>
+
+<!-- APP CONTENT -->
+<div id="appContent" class="app-content">
+<button class="logout-btn" onclick="doLogout()">Logout</button>
+<div class="header">
+    <h1>Kingpost Pedestal Leveling</h1>
+    <p>Precision Bubble Level — GD 400-0429B Adapted</p>
+</div>
+<div class="container">
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('measure')">Bubble Level</div>
+    <div class="tab" onclick="switchTab('theodolite')">Theodolite</div>
+    <div class="tab" onclick="switchTab('guide')">Guide</div>
+    <div class="tab" onclick="switchTab('formulas')">Formulas</div>
+</div>
+
+<!-- ═══ MEASURE TAB ═══ -->
+<div id="tab-measure" class="tab-content active">
+
+<div class="card">
+    <h2>Configuration</h2>
+    <div class="row">
+        <label>Pedestal Type:</label>
+        <select id="pedType">
+            <option value="2leg_pintle_N">2 Legs + Pintle (Legs North)</option>
+            <option value="2leg_N">2 Legs, No Pintle (Legs North)</option>
+            <option value="2leg_pintle_S">2 Legs + Pintle (Legs South)</option>
+            <option value="2leg_S">2 Legs, No Pintle (Legs South)</option>
+        </select>
+    </div>
+    <div class="row">
+        <label>Spec Type:</label>
+        <select id="specType" onchange="updateSpec()">
+            <option value="standard">Standard (≤ 0.030°)</option>
+            <option value="ttc">TT&C Critical (≤ 0.010°)</option>
+        </select>
+    </div>
+    <div class="row">
+        <label>Level Sensitivity:</label>
+        <select id="levelType" onchange="updateSens()">
+            <option value="20">20 arcsec/div (Mitutoyo/Starrett 199)</option>
+            <option value="10">10 arcsec/div (Wyler)</option>
+            <option value="42">42 arcsec/div (Starrett 98)</option>
+            <option value="30">30 arcsec/div</option>
+            <option value="custom">Custom...</option>
+        </select>
+    </div>
+    <div class="row" id="customRow" style="display:none">
+        <label>Custom (arcsec/div):</label>
+        <input type="number" id="customSens" value="20" step="any" style="max-width:100px">
+    </div>
+    <span class="spec-badge spec-std" id="specBadge">Max: 0.030° = 108 arcsec</span>
+</div>
+
+<div class="card">
+    <h2>Bubble Readings (divisions from center)</h2>
+    <p class="info-text">Place level on kingpost. Rotate antenna to each position. Record bubble offset.<br>
+    Convention: + = bubble moves toward legs side, − = bubble moves away from legs.</p>
+
+    <div class="diagram">
+        <svg width="280" height="160" viewBox="0 0 280 160">
+            <!-- Foundation -->
+            <rect x="20" y="130" width="240" height="10" fill="#795548" rx="2"/>
+            <!-- Kingpost -->
+            <rect x="130" y="40" width="20" height="90" fill="#455A64" rx="3"/>
+            <!-- Leg 1 (left) -->
+            <line x1="60" y1="130" x2="135" y2="60" stroke="#E65100" stroke-width="3"/>
+            <circle cx="60" cy="130" r="8" fill="#E65100"/>
+            <text x="60" y="150" text-anchor="middle" font-size="10" fill="#E65100" font-weight="bold">Leg 1</text>
+            <!-- Leg 2 (right) -->
+            <line x1="220" y1="130" x2="145" y2="60" stroke="#6A1B9A" stroke-width="3"/>
+            <circle cx="220" cy="130" r="8" fill="#6A1B9A"/>
+            <text x="220" y="150" text-anchor="middle" font-size="10" fill="#6A1B9A" font-weight="bold">Leg 2</text>
+            <!-- Leg 3 (upper bearing) -->
+            <rect x="125" y="35" width="30" height="12" fill="#2E7D32" rx="3"/>
+            <text x="140" y="30" text-anchor="middle" font-size="9" fill="#2E7D32" font-weight="bold">Leg 3 (Upper Brg)</text>
+            <!-- Lower bearing -->
+            <circle cx="140" cy="130" r="5" fill="#1565C0"/>
+            <text x="140" y="125" text-anchor="middle" font-size="8" fill="#1565C0">Lower Brg</text>
+            <!-- Level indicator -->
+            <rect x="115" y="50" width="50" height="8" fill="#FDD835" stroke="#F57F17" stroke-width="1" rx="4"/>
+            <circle cx="140" cy="54" r="3" fill="#4CAF50"/>
+            <text x="185" y="56" font-size="8" fill="#F57F17">← Level</text>
+        </svg>
+    </div>
+
+    <div class="reading-grid">
+        <label><span class="pos-dot p-c">C</span> Center (0°):</label>
+        <input type="number" id="rC" step="any" value="0" placeholder="0">
+        <label><span class="pos-dot p-1">1</span> At Leg 1 (−45°):</label>
+        <input type="number" id="rL1" step="any" placeholder="div">
+        <label><span class="pos-dot p-2">2</span> At Leg 2 (+45°):</label>
+        <input type="number" id="rL2" step="any" placeholder="div">
+    </div>
+    <p class="info-text">+ = bubble moved toward legs side | − = bubble moved away from legs</p>
+</div>
+
+<div class="card">
+    <button class="btn btn-calc" onclick="calculate()">CALCULATE & ADVISE</button>
+    <div id="resultArea"></div>
+</div>
+
+</div>
+
+<!-- ═══ THEODOLITE TAB ═══ -->
+<div id="tab-theodolite" class="tab-content">
+
+<div class="card">
+    <h2>Theodolite + Scale Method (GD 400-0429B)</h2>
+    <p class="info-text">Mount a linear scale on the pedestal opposite the pintle. Read scale with theodolite at 3 azimuth positions.</p>
+
+    <div class="row">
+        <label>Spec Type:</label>
+        <select id="specTypeT" onchange="updateSpecT()">
+            <option value="standard">Standard (≤ 0.030°)</option>
+            <option value="ttc">TT&C Critical (≤ 0.010°)</option>
+        </select>
+    </div>
+    <div class="row">
+        <label>Radius to Scale R:</label>
+        <input type="number" id="radiusR" value="50" step="any" style="max-width:100px" placeholder="value">
+        <select id="radiusUnit" style="max-width:80px" onchange="updateSpecT()">
+            <option value="in">inches</option>
+            <option value="mm">mm</option>
+        </select>
+    </div>
+    <div class="row">
+        <label>Scale Readings in:</label>
+        <select id="scaleUnit" style="max-width:100px">
+            <option value="in">inches</option>
+            <option value="mm">mm</option>
+        </select>
+    </div>
+    <p class="info-text">R = horizontal distance from AZ axis center to the scale. Minimum 60" (1500mm) recommended.</p>
+
+    <div style="margin-top:12px">
+        <span class="spec-badge spec-std" id="specBadgeT">Max scale error: 0.025" (at R=50")</span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Scale Readings (inches)</h2>
+    <p class="info-text">Read the scale with theodolite at each azimuth position. Record absolute readings.</p>
+
+    <div class="diagram">
+        <svg width="260" height="130" viewBox="0 0 260 130">
+            <!-- Top view of pedestal -->
+            <circle cx="130" cy="70" r="30" fill="none" stroke="#455A64" stroke-width="2"/>
+            <circle cx="130" cy="70" r="3" fill="#455A64"/>
+            <text x="130" y="95" text-anchor="middle" font-size="9" fill="#455A64">AZ Axis</text>
+            <!-- Scale position -->
+            <rect x="200" y="50" width="8" height="40" fill="#FDD835" stroke="#F57F17" stroke-width="1"/>
+            <text x="220" y="73" font-size="9" fill="#F57F17">Scale</text>
+            <!-- Radius line -->
+            <line x1="130" y1="70" x2="200" y2="70" stroke="#1565C0" stroke-width="1" stroke-dasharray="4,2"/>
+            <text x="165" y="63" font-size="8" fill="#1565C0">R</text>
+            <!-- Positions -->
+            <path d="M 160,70 A 30,30 0 0,0 145,42" fill="none" stroke="#E65100" stroke-width="1.5"/>
+            <text x="155" y="38" font-size="8" fill="#E65100">Pos 2</text>
+            <path d="M 160,70 A 30,30 0 0,1 145,98" fill="none" stroke="#6A1B9A" stroke-width="1.5"/>
+            <text x="155" y="108" font-size="8" fill="#6A1B9A">Pos 3</text>
+            <text x="165" y="73" font-size="8" fill="#1565C0">Pos 1</text>
+        </svg>
+    </div>
+
+    <div class="reading-grid">
+        <label><span class="pos-dot p-c">1</span> Pos 1 (Center):</label>
+        <input type="number" id="tP1" step="any" placeholder="inches">
+        <label><span class="pos-dot p-1">2</span> Pos 2 (CW 90°):</label>
+        <input type="number" id="tP2" step="any" placeholder="inches">
+        <label><span class="pos-dot p-2">3</span> Pos 3 (CCW 90°):</label>
+        <input type="number" id="tP3" step="any" placeholder="inches">
+    </div>
+</div>
+
+<div class="card">
+    <button class="btn btn-calc" onclick="calcTheodolite()">CALCULATE VERTICALITY</button>
+    <div id="resultAreaT"></div>
+</div>
+
+<!-- Multi-iteration table -->
+<div class="card">
+    <h2>Alignment Record (Table 6-1)</h2>
+    <p class="info-text">Record multiple iterations as you adjust. Click "Add Row" after each measurement set.</p>
+    <div style="overflow-x:auto">
+        <table id="recordTable" style="width:100%;font-size:11px;border-collapse:collapse">
+            <thead>
+                <tr style="background:#37474F;color:#fff">
+                    <th style="padding:6px">Step</th>
+                    <th>Pos 1</th>
+                    <th>Pos 2</th>
+                    <th>Pos 3</th>
+                    <th>Δ(1-2)</th>
+                    <th>Δ(1-3)</th>
+                    <th>Δ(2-3)</th>
+                    <th>Peak P</th>
+                    <th>Angle°</th>
+                </tr>
+            </thead>
+            <tbody id="recordBody"></tbody>
+        </table>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn btn-sm" style="background:#1565C0;color:#fff;width:auto;padding:8px 14px" onclick="addRecordRow()">+ Add Current Reading</button>
+        <button class="btn btn-sm" style="background:#D32F2F;color:#fff;width:auto;padding:8px 14px" onclick="clearRecord()">Clear All</button>
+    </div>
+</div>
+
+</div>
+
+<!-- ═══ GUIDE TAB ═══ -->
+<div id="tab-guide" class="tab-content">
+<div class="card">
+    <h2>Step-by-Step Procedure</h2>
+
+    <div class="step-guide">
+        <b>Goal:</b> Align upper bearing (Leg 3) with lower bearing (kingpost base) so they share the same vertical rotation axis. When aligned → bubble stays still during azimuth rotation.
+    </div>
+
+    <b>Prerequisites</b>
+    <div class="step-guide">
+        • Full reflector weight installed<br>
+        • Rough-leveled with spirit level (within 0.5°)<br>
+        • Lower pintle grouted and cured<br>
+        • Measurements at night (thermally stable)<br>
+        • Anchor nuts snug, push bolts greased
+    </div>
+
+    <b>Step 1 — Place Level</b>
+    <div class="step-guide">
+        Place precision bubble level on the kingpost tube (flat/machined surface).<br>
+        Orient it so it reads tilt in the leg direction (North-South if legs are North).
+    </div>
+
+    <b>Step 2 — Read Center Position</b>
+    <div class="step-guide">
+        Position antenna at center of rotation (0° azimuth).<br>
+        Read bubble → Record as <b>Center</b> (usually set as 0 reference).
+    </div>
+
+    <b>Step 3 — Read at Leg 1</b>
+    <div class="step-guide">
+        Rotate antenna 45° toward Leg 1 side.<br>
+        Read bubble offset → Record as <b>Leg 1 reading</b>.<br>
+        Note direction: + if bubble moved toward legs, − if away.
+    </div>
+
+    <b>Step 4 — Read at Leg 2</b>
+    <div class="step-guide">
+        Return to center, then rotate 45° toward Leg 2 side.<br>
+        Read bubble offset → Record as <b>Leg 2 reading</b>.
+    </div>
+
+    <b>Step 5 — Calculate & Adjust</b>
+    <div class="step-guide">
+        Enter readings in Measure tab → app tells you what to adjust.<br>
+        <b>Always return to center before adjusting!</b>
+    </div>
+
+    <b>Step 6 — Repeat</b>
+    <div class="step-guide">
+        Re-measure after each adjustment.<br>
+        Repeat until bubble stays still (within spec) during full rotation.
+    </div>
+
+    <div style="margin-top:16px"><b>Adjustment Logic</b></div>
+
+    <div class="scenario">
+        <b>Scenario A:</b> Bubble moves toward Leg 1 when at Leg 1 position<br>
+        → Upper bearing tilts toward Leg 1<br>
+        → <b>Fix: Raise Leg 1</b> (tighten anchor nut) OR lower Leg 3 on Leg 1 side
+    </div>
+    <div class="scenario">
+        <b>Scenario B:</b> Bubble moves toward Leg 2 when at Leg 2 position<br>
+        → Upper bearing tilts toward Leg 2<br>
+        → <b>Fix: Raise Leg 2</b> (tighten anchor nut) OR lower Leg 3 on Leg 2 side
+    </div>
+    <div class="scenario">
+        <b>Scenario C:</b> Bubble moves same direction at both positions<br>
+        → Whole kingpost leans one way<br>
+        → <b>Fix: Adjust Leg 3</b> (upper bearing leg) to shift the upper bearing back to center
+    </div>
+    <div class="scenario">
+        <b>Scenario D:</b> Bubble moves opposite directions at Leg 1 vs Leg 2<br>
+        → Classic lean — one side high, other low<br>
+        → <b>Fix: Raise the low side leg, lower the high side leg</b>
+    </div>
+
+    <div class="step-guide" style="margin-top:12px">
+        <b>Remember:</b> Leg 3 acts as a seesaw — lowering its left side raises the right side and vice versa. Use Leg 3 for fine East-West correction of the upper bearing position.
+    </div>
+</div>
+</div>
+
+<!-- ═══ FORMULAS TAB ═══ -->
+<div id="tab-formulas" class="tab-content">
+<div class="card">
+    <h2>Formulas & Specifications</h2>
+
+    <b>Bubble → Angle Conversion</b>
+    <div class="formula">Tilt (arcsec) = divisions × sensitivity (arcsec/div)
+Tilt (degrees) = arcsec / 3600
+Tilt (in/in) = degrees / 57.3</div>
+
+    <b>Error Calculation</b>
+    <div class="formula">Δ(Center − Leg1) = |rC − rL1| × sensitivity
+Δ(Center − Leg2) = |rC − rL2| × sensitivity
+Δ(Leg1 − Leg2)  = |rL1 − rL2| × sensitivity
+
+Max Peak Error = max of above three (arcsec)
+Lean angle = Max Peak Error / 3600 (degrees)</div>
+
+    <b>Specifications (from GD 400-0429B)</b>
+    <div class="formula">Standard kingpost:  ≤ 0.030° = 108 arcsec = 0.0005 in/in
+TT&C / Critical:   ≤ 0.010° =  36 arcsec = 0.00018 in/in
+
+Equivalent in divisions:
+  At 20"/div: Standard = 5.4 div, TT&C = 1.8 div
+  At 10"/div: Standard = 10.8 div, TT&C = 3.6 div
+  At 42"/div: Standard = 2.6 div, TT&C = 0.86 div</div>
+
+    <b>GD Theodolite Method (for reference)</b>
+    <div class="formula">Error = P / R × 57.3 (degrees)
+  P = max peak scale reading difference (inches)
+  R = radius from AZ axis to scale (inches)
+
+Equivalent: 0.030° at R=50" → P = 0.025" max</div>
+
+    <b>Level Sensitivities</b>
+    <div class="formula">Starrett 98-12:   42 arcsec/div
+Starrett 199:     20 arcsec/div
+Mitutoyo 960-602: 20 arcsec/div (0.1 mm/m)
+Wyler 53:         10 arcsec/div</div>
+</div>
+</div>
+
+</div><!-- container -->
+
+<script>
+function switchTab(t){
+    document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+    document.getElementById('tab-'+t).classList.add('active');
+    event.target.classList.add('active');
+}
+function updateSpec(){
+    const t=document.getElementById('specType').value;
+    const b=document.getElementById('specBadge');
+    if(t==='ttc'){b.textContent='Max: 0.010° = 36 arcsec';b.className='spec-badge spec-ttc';}
+    else{b.textContent='Max: 0.030° = 108 arcsec';b.className='spec-badge spec-std';}
+}
+function updateSens(){
+    document.getElementById('customRow').style.display=document.getElementById('levelType').value==='custom'?'flex':'none';
+}
+function getSens(){
+    const v=document.getElementById('levelType').value;
+    return v==='custom'?(parseFloat(document.getElementById('customSens').value)||20):parseFloat(v);
+}
+
+function calculate(){
+    const rC=parseFloat(document.getElementById('rC').value)||0;
+    const rL1=parseFloat(document.getElementById('rL1').value);
+    const rL2=parseFloat(document.getElementById('rL2').value);
+    const area=document.getElementById('resultArea');
+
+    if(isNaN(rL1)||isNaN(rL2)){
+        area.innerHTML='<div class="result-box"><p style="color:#D32F2F;text-align:center">Enter readings for all 3 positions.</p></div>';
+        return;
+    }
+
+    const sens=getSens();
+    const spec=document.getElementById('specType').value==='ttc'?36:108;
+    const specDeg=spec/3600;
+
+    // Differences in divisions
+    const dCL1=Math.abs(rC-rL1);
+    const dCL2=Math.abs(rC-rL2);
+    const dL1L2=Math.abs(rL1-rL2);
+
+    // Convert to arcsec
+    const eCL1=dCL1*sens;
+    const eCL2=dCL2*sens;
+    const eL1L2=dL1L2*sens;
+
+    const maxErr=Math.max(eCL1,eCL2,eL1L2);
+    const maxDeg=maxErr/3600;
+    const pass=maxErr<=spec;
+
+    // Max allowable divisions
+    const maxDiv=spec/sens;
+
+    let html=`<div class="result-box ${pass?'pass':'fail'}">`;
+    html+=`<div class="result-big ${pass?'green':'red'}">${pass?'✓ PASS — WITHIN SPEC':'✗ FAIL — ADJUSTMENT NEEDED'}</div>`;
+    html+=`<div class="result-big ${pass?'green':'red'}">${maxDeg.toFixed(4)}°  (${maxErr.toFixed(1)} arcsec)</div>`;
+    html+=`<div class="detail" style="text-align:center">Spec: ≤ ${specDeg.toFixed(3)}° (${spec} arcsec) | Max allowed: ${maxDiv.toFixed(1)} div</div>`;
+    html+=`</div>`;
+
+    // Breakdown
+    html+=`<div class="detail"><b>Breakdown:</b><br>`;
+    html+=`Δ(Center−Leg1) = |${rC}−${rL1}| = ${dCL1.toFixed(2)} div × ${sens}"/div = <b>${eCL1.toFixed(1)} arcsec</b><br>`;
+    html+=`Δ(Center−Leg2) = |${rC}−${rL2}| = ${dCL2.toFixed(2)} div × ${sens}"/div = <b>${eCL2.toFixed(1)} arcsec</b><br>`;
+    html+=`Δ(Leg1−Leg2) = |${rL1}−${rL2}| = ${dL1L2.toFixed(2)} div × ${sens}"/div = <b>${eL1L2.toFixed(1)} arcsec</b><br>`;
+    html+=`<b>Max Peak Error = ${maxErr.toFixed(1)} arcsec = ${maxDeg.toFixed(4)}°</b></div>`;
+
+    // Adjustment advice with per-leg amounts
+    if(!pass){
+        html+=`<div class="adjust-box adjust-fail"><b>⚠️ Adjustment Required</b><br>`;
+        html+=`<i>Return to center position before adjusting!</i><br><br>`;
+
+        // The bubble reading at each position tells us how much the kingpost tilts
+        // when the weight is over that leg. The correction needed at each leg
+        // is proportional to the reading at that position.
+        // deltaL1 = rL1 - rC (positive = tilts toward legs at Leg1 position)
+        // deltaL2 = rL2 - rC (positive = tilts toward legs at Leg2 position)
+        const dL1 = rL1 - rC;
+        const dL2 = rL2 - rC;
+
+        html+=`<b>Per-Leg Correction:</b><br><br>`;
+
+        // Leg 1 correction
+        if(Math.abs(dL1) > 0.1) {
+            const dir1 = dL1 > 0 ? 'RAISE' : 'LOWER';
+            const arcsec1 = (Math.abs(dL1) * sens).toFixed(1);
+            html+=`<span class="pos-dot p-1">1</span> <b>Leg 1: ${dir1} by ${Math.abs(dL1).toFixed(1)} div</b> (${arcsec1} arcsec)<br>`;
+            if(dL1 > 0) {
+                html+=`&nbsp;&nbsp;&nbsp;→ Tighten leveling bolts (increase gap between foundation & leg plate)<br>`;
+            } else {
+                html+=`&nbsp;&nbsp;&nbsp;→ Loosen leveling bolts + tighten anchor nuts (pull plate down toward foundation)<br>`;
+            }
+        } else {
+            html+=`<span class="pos-dot p-1">1</span> Leg 1: OK (within tolerance)<br>`;
+        }
+
+        html+=`<br>`;
+
+        // Leg 2 correction
+        if(Math.abs(dL2) > 0.1) {
+            const dir2 = dL2 > 0 ? 'RAISE' : 'LOWER';
+            const arcsec2 = (Math.abs(dL2) * sens).toFixed(1);
+            html+=`<span class="pos-dot p-2">2</span> <b>Leg 2: ${dir2} by ${Math.abs(dL2).toFixed(1)} div</b> (${arcsec2} arcsec)<br>`;
+            if(dL2 > 0) {
+                html+=`&nbsp;&nbsp;&nbsp;→ Tighten leveling bolts (increase gap between foundation & leg plate)<br>`;
+            } else {
+                html+=`&nbsp;&nbsp;&nbsp;→ Loosen leveling bolts + tighten anchor nuts (pull plate down toward foundation)<br>`;
+            }
+        } else {
+            html+=`<span class="pos-dot p-2">2</span> Leg 2: OK (within tolerance)<br>`;
+        }
+
+        // Leg 3 (upper bearing) - if both move same direction
+        if((dL1 > 0 && dL2 > 0) || (dL1 < 0 && dL2 < 0)) {
+            const avgD = (dL1 + dL2) / 2;
+            const dir3 = avgD > 0 ? 'shift AWAY from legs' : 'shift TOWARD legs';
+            const arcsec3 = (Math.abs(avgD) * sens).toFixed(1);
+            html+=`<br><span style="display:inline-block;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:10px;font-weight:700;color:#fff;background:#2E7D32;margin-right:4px;vertical-align:middle">3</span>`;
+            html+=`<b>Leg 3 (Upper Brg): ${dir3} by ~${Math.abs(avgD).toFixed(1)} div</b> (${arcsec3} arcsec)<br>`;
+            if(avgD > 0) {
+                html+=`&nbsp;&nbsp;&nbsp;→ Loosen Leg 3 leveling bolts on LEGS side<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;→ Tighten Leg 3 leveling bolts on KINGPOST side<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;→ Tighten Leg 3 anchor nuts on LEGS side (pull down)<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;(Tilts Leg 3 plate to move upper bearing away from legs)<br>`;
+            } else {
+                html+=`&nbsp;&nbsp;&nbsp;→ Tighten Leg 3 leveling bolts on LEGS side<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;→ Loosen Leg 3 leveling bolts on KINGPOST side<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;→ Tighten Leg 3 anchor nuts on KINGPOST side (pull down)<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;(Tilts Leg 3 plate to move upper bearing toward legs)<br>`;
+            }
+        }
+
+        // Leg 3 - if readings are different magnitudes (left-right imbalance)
+        const diffLR = Math.abs(dL1) - Math.abs(dL2);
+        if(Math.abs(diffLR) > 0.5 && !((dL1 > 0 && dL2 > 0) || (dL1 < 0 && dL2 < 0))) {
+            const arcsecLR = (Math.abs(diffLR) * sens).toFixed(1);
+            html+=`<br><span style="display:inline-block;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:10px;font-weight:700;color:#fff;background:#2E7D32;margin-right:4px;vertical-align:middle">3</span>`;
+            if(Math.abs(dL1) > Math.abs(dL2)) {
+                html+=`<b>Leg 3 also: shift toward Leg 2 side by ~${Math.abs(diffLR).toFixed(1)} div</b> (${arcsecLR} arcsec)<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;→ Tighten Leg 3 leveling bolt nearest Leg 2<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;→ Loosen Leg 3 leveling bolt nearest Leg 1<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;(Tilts Leg 3 plate sideways toward Leg 2)<br>`;
+            } else {
+                html+=`<b>Leg 3 also: shift toward Leg 1 side by ~${Math.abs(diffLR).toFixed(1)} div</b> (${arcsecLR} arcsec)<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;→ Tighten Leg 3 leveling bolt nearest Leg 1<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;→ Loosen Leg 3 leveling bolt nearest Leg 2<br>`;
+                html+=`&nbsp;&nbsp;&nbsp;(Tilts Leg 3 plate sideways toward Leg 1)<br>`;
+            }
+        }
+
+        html+=`<br><div style="background:#f5f5f5;padding:8px;border-radius:6px;font-size:11px">`;
+        html+=`<b>Summary:</b> Correct each leg by the amount shown above.<br>`;
+        html+=`After adjustment, re-measure. Target: all readings = 0 div (bubble stays still).`;
+        html+=`</div>`;
+
+        const overBy=(maxErr-spec)/sens;
+        html+=`<br><b>Total over spec by:</b> ${overBy.toFixed(1)} divisions (${(maxErr-spec).toFixed(1)} arcsec)`;
+        html+=`</div>`;
+    } else {
+        html+=`<div class="adjust-box adjust-pass"><b>✓ Alignment is within specification.</b><br>`;
+        html+=`Proceed to:<br>• Grout pedestal legs (cure 2-3 days)<br>• Remove push bolts<br>• Torque anchor bolts to spec</div>`;
+    }
+
+    // Add bearing offset diagram
+    html += bearingDiagram(rL1 - rC, rL2 - rC, sens);
+
+    area.innerHTML=html;
+    area.scrollIntoView({behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════════════════
+// BEARING OFFSET DIAGRAM
+// ═══════════════════════════════════════════════════════════
+function bearingDiagram(deltaL1, deltaL2, sensitivity) {
+    // deltaL1 = reading at Leg1 minus center (+ = tilts toward legs)
+    // deltaL2 = reading at Leg2 minus center
+    // Determine offset direction of upper bearing relative to lower bearing
+
+    // If bubble moves + when at Leg1 → kingpost tilts toward Leg1 → upper bearing is offset toward Leg1
+    // If bubble moves - when at Leg1 → upper bearing is offset away from Leg1
+
+    const maxDelta = Math.max(Math.abs(deltaL1), Math.abs(deltaL2), 0.1);
+    const scale = 25 / maxDelta; // scale for SVG offset (max 25px)
+
+    // Upper bearing offset (exaggerated for visibility)
+    const offsetX = ((deltaL2 - deltaL1) / 2) * scale; // positive = toward Leg2
+    const offsetY = -((deltaL1 + deltaL2) / 2) * scale; // positive up = toward legs (North/South)
+
+    const cx = 150, cy = 120; // center of diagram
+    const upperX = cx + offsetX;
+    const upperY = cy + offsetY;
+
+    // Determine quadrant description
+    let quadrant = '';
+    const xDir = offsetX > 1 ? 'Leg 2 side' : offsetX < -1 ? 'Leg 1 side' : 'centered L-R';
+    const yDir = offsetY < -1 ? 'toward legs' : offsetY > 1 ? 'away from legs' : 'centered F-B';
+
+    if (Math.abs(offsetX) < 1 && Math.abs(offsetY) < 1) {
+        quadrant = 'Bearings are nearly aligned ✓';
+    } else {
+        quadrant = `Upper bearing offset: ${xDir}, ${yDir}`;
+    }
+
+    const arcsecL1 = (deltaL1 * sensitivity).toFixed(1);
+    const arcsecL2 = (deltaL2 * sensitivity).toFixed(1);
+
+    let svg = `<div style="margin-top:14px;text-align:center">
+    <div style="font-size:12px;font-weight:600;color:#37474F;margin-bottom:6px">Bearing Offset Diagram (Top View)</div>
+    <svg width="300" height="240" viewBox="0 0 300 240">
+        <!-- Foundation outline -->
+        <rect x="50" y="60" width="200" height="140" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="4,2" rx="6"/>
+
+        <!-- Legs direction label -->
+        <text x="150" y="52" text-anchor="middle" font-size="10" fill="#555">← LEGS SIDE →</text>
+
+        <!-- Leg 1 -->
+        <circle cx="80" cy="190" r="10" fill="#E65100" opacity="0.3"/>
+        <circle cx="80" cy="190" r="4" fill="#E65100"/>
+        <text x="80" y="210" text-anchor="middle" font-size="9" fill="#E65100" font-weight="bold">Leg 1</text>
+        <text x="80" y="222" text-anchor="middle" font-size="8" fill="#555">${arcsecL1}"</text>
+
+        <!-- Leg 2 -->
+        <circle cx="220" cy="190" r="10" fill="#6A1B9A" opacity="0.3"/>
+        <circle cx="220" cy="190" r="4" fill="#6A1B9A"/>
+        <text x="220" y="210" text-anchor="middle" font-size="9" fill="#6A1B9A" font-weight="bold">Leg 2</text>
+        <text x="220" y="222" text-anchor="middle" font-size="8" fill="#555">${arcsecL2}"</text>
+
+        <!-- Lower bearing (fixed - at center) -->
+        <circle cx="${cx}" cy="${cy}" r="14" fill="none" stroke="#1565C0" stroke-width="2.5"/>
+        <circle cx="${cx}" cy="${cy}" r="3" fill="#1565C0"/>
+        <text x="${cx}" y="${cy + 28}" text-anchor="middle" font-size="9" fill="#1565C0" font-weight="bold">Lower Brg</text>
+
+        <!-- Upper bearing (offset) -->
+        <circle cx="${upperX}" cy="${upperY}" r="12" fill="none" stroke="#D32F2F" stroke-width="2.5" stroke-dasharray="4,2"/>
+        <circle cx="${upperX}" cy="${upperY}" r="3" fill="#D32F2F"/>
+        <text x="${upperX}" y="${upperY - 16}" text-anchor="middle" font-size="9" fill="#D32F2F" font-weight="bold">Upper Brg</text>
+
+        <!-- Offset arrow -->
+        ${(Math.abs(offsetX) > 1 || Math.abs(offsetY) > 1) ?
+            `<line x1="${cx}" y1="${cy}" x2="${upperX}" y2="${upperY}" stroke="#D32F2F" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+             <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+             <polygon points="0 0, 8 3, 0 6" fill="#D32F2F"/></marker></defs>` : ''}
+
+        <!-- Aligned position (ghost) -->
+        <circle cx="${cx}" cy="${cy}" r="12" fill="none" stroke="#4CAF50" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+
+        <!-- Legend -->
+        <circle cx="60" cy="78" r="4" fill="#1565C0"/><text x="72" y="82" font-size="8" fill="#555">Lower Bearing (fixed)</text>
+        <circle cx="60" cy="93" r="4" fill="#D32F2F"/><text x="72" y="97" font-size="8" fill="#555">Upper Bearing (current)</text>
+        <circle cx="60" cy="108" r="4" fill="#4CAF50" opacity="0.5"/><text x="72" y="112" font-size="8" fill="#555">Target (aligned)</text>
+    </svg>
+    <div style="font-size:11px;color:#D32F2F;font-weight:600;margin-top:4px">${quadrant}</div>
+    </div>`;
+
+    return svg;
+}
+
+// ═══════════════════════════════════════════════════════════
+// THEODOLITE METHOD
+// ═══════════════════════════════════════════════════════════
+function updateSpecT() {
+    const t = document.getElementById('specTypeT').value;
+    const R = parseFloat(document.getElementById('radiusR').value) || 50;
+    const rUnit = document.getElementById('radiusUnit').value;
+    const R_in = rUnit === 'mm' ? R / 25.4 : R;
+    const badge = document.getElementById('specBadgeT');
+    if (t === 'ttc') {
+        const maxP_in = R_in * 0.00018;
+        const maxP_mm = maxP_in * 25.4;
+        badge.textContent = `Max scale error: ${maxP_in.toFixed(4)}" (${maxP_mm.toFixed(3)} mm)`;
+        badge.className = 'spec-badge spec-ttc';
+    } else {
+        const maxP_in = R_in * 0.0005;
+        const maxP_mm = maxP_in * 25.4;
+        badge.textContent = `Max scale error: ${maxP_in.toFixed(4)}" (${maxP_mm.toFixed(3)} mm)`;
+        badge.className = 'spec-badge spec-std';
+    }
+}
+
+function calcTheodolite() {
+    const p1 = parseFloat(document.getElementById('tP1').value);
+    const p2 = parseFloat(document.getElementById('tP2').value);
+    const p3 = parseFloat(document.getElementById('tP3').value);
+    let R = parseFloat(document.getElementById('radiusR').value) || 50;
+    const rUnit = document.getElementById('radiusUnit').value;
+    const sUnit = document.getElementById('scaleUnit').value;
+    const area = document.getElementById('resultAreaT');
+
+    if (isNaN(p1) || isNaN(p2) || isNaN(p3)) {
+        area.innerHTML = '<div class="result-box"><p style="color:#D32F2F;text-align:center">Enter all 3 position readings.</p></div>';
+        return;
+    }
+
+    // Convert everything to inches for calculation
+    const R_in = rUnit === 'mm' ? R / 25.4 : R;
+    const scale = sUnit === 'mm' ? 1 / 25.4 : 1; // multiplier to convert readings to inches
+
+    const specType = document.getElementById('specTypeT').value;
+    const maxSpecDeg = specType === 'ttc' ? 0.010 : 0.030;
+    const maxSpecInPerIn = specType === 'ttc' ? 0.00018 : 0.0005;
+    const maxP_in = R_in * maxSpecInPerIn;
+    const maxP_display = sUnit === 'mm' ? maxP_in * 25.4 : maxP_in;
+
+    // Differences (in original units)
+    const d12 = Math.abs(p1 - p2);
+    const d13 = Math.abs(p1 - p3);
+    const d23 = Math.abs(p2 - p3);
+
+    // Max peak error in original units
+    const P = Math.max(d12, d13, d23);
+    // Convert P to inches for angle calculation
+    const P_in = P * scale;
+
+    // Calculate angle
+    const errorInPerIn = P_in / R_in;
+    const errorDeg = errorInPerIn * 57.3;
+    const errorArcsec = errorDeg * 3600;
+
+    const pass = P_in <= maxP_in;
+    const unit = sUnit === 'mm' ? 'mm' : '"';
+    const rLabel = rUnit === 'mm' ? 'mm' : '"';
+
+    let html = `<div class="result-box ${pass ? 'pass' : 'fail'}">`;
+    html += `<div class="result-big ${pass ? 'green' : 'red'}">${pass ? '✓ PASS' : '✗ FAIL'}</div>`;
+    html += `<div class="result-big ${pass ? 'green' : 'red'}">${errorDeg.toFixed(4)}°</div>`;
+    html += `<div class="detail" style="text-align:center">`;
+    html += `Peak Error P = ${P.toFixed(4)}${unit} | R = ${R}${rLabel} | ${errorArcsec.toFixed(1)} arcsec<br>`;
+    html += `Spec: ≤ ${maxSpecDeg}° (max P = ${maxP_display.toFixed(4)}${unit} at R=${R}${rLabel})`;
+    html += `</div></div>`;
+
+    // Breakdown
+    html += `<div class="detail"><b>Breakdown:</b><br>`;
+    html += `Δ(1−2) = |${p1} − ${p2}| = <b>${d12.toFixed(4)}${unit}</b><br>`;
+    html += `Δ(1−3) = |${p1} − ${p3}| = <b>${d13.toFixed(4)}${unit}</b><br>`;
+    html += `Δ(2−3) = |${p2} − ${p3}| = <b>${d23.toFixed(4)}${unit}</b><br>`;
+    html += `<b>Max Peak P = ${P.toFixed(4)}${unit}</b>`;
+    if (sUnit === 'mm') {
+        html += ` (${P_in.toFixed(4)}")`;
+    }
+    html += `<br><br>`;
+    html += `<b>Error = P / R × 57.3 = ${P_in.toFixed(4)}" / ${R_in.toFixed(2)}" × 57.3 = ${errorDeg.toFixed(4)}°</b>`;
+    html += `</div>`;
+
+    // Adjustment advice
+    if (!pass) {
+        html += `<div class="adjust-box adjust-fail"><b>⚠️ Adjustment Required</b><br>`;
+        html += `<i>Return to center (Pos 1) before adjusting!</i><br><br>`;
+
+        if (p1 < p2 && p1 < p3) {
+            html += `Pos 1 is BELOW both end positions.<br>`;
+            html += `→ <b>Both legs move DOWN</b> to correct.`;
+        } else if (p1 > p2 && p1 > p3) {
+            html += `Pos 1 is ABOVE both end positions.<br>`;
+            html += `→ <b>Both legs move UP</b> to correct.`;
+        } else {
+            const lowPos = p2 < p3 ? 'Pos 2 (CW side)' : 'Pos 3 (CCW side)';
+            const highPos = p2 > p3 ? 'Pos 2 (CW side)' : 'Pos 3 (CCW side)';
+            html += `Pos 1 is between end positions.<br>`;
+            html += `→ <b>${lowPos} leg moves UP</b><br>`;
+            html += `→ <b>${highPos} leg moves DOWN</b>`;
+        }
+
+        const overBy = sUnit === 'mm' ? (P_in - maxP_in) * 25.4 : (P_in - maxP_in);
+        html += `<br><br>Over spec by: ${overBy.toFixed(4)}${unit} on scale`;
+        html += `</div>`;
+    } else {
+        html += `<div class="adjust-box adjust-pass"><b>✓ Within specification.</b><br>`;
+        html += `Proceed to grout pedestal legs. Cure 2-3 days, then torque anchor bolts.</div>`;
+    }
+
+    // Add bearing offset diagram (use scale differences as proxy for tilt)
+    const deltaL1_t = p2 - p1; // Pos2 vs Pos1
+    const deltaL2_t = p3 - p1; // Pos3 vs Pos1
+    // Sensitivity equivalent: 1 unit on scale at radius R = angle
+    const sensEquiv = 1; // just use raw differences for direction
+    html += bearingDiagram(deltaL1_t, deltaL2_t, sensEquiv);
+
+    area.innerHTML = html;
+    area.scrollIntoView({behavior: 'smooth'});
+}
+
+// Alignment Record Table
+let recordStep = 0;
+
+function addRecordRow() {
+    const p1 = parseFloat(document.getElementById('tP1').value);
+    const p2 = parseFloat(document.getElementById('tP2').value);
+    const p3 = parseFloat(document.getElementById('tP3').value);
+    const R = parseFloat(document.getElementById('radiusR').value) || 50;
+
+    if (isNaN(p1) || isNaN(p2) || isNaN(p3)) { alert('Enter all 3 readings first.'); return; }
+
+    recordStep++;
+    const d12 = Math.abs(p1 - p2);
+    const d13 = Math.abs(p1 - p3);
+    const d23 = Math.abs(p2 - p3);
+    const P = Math.max(d12, d13, d23);
+    const deg = (P / R) * 57.3;
+
+    const specType = document.getElementById('specTypeT').value;
+    const maxDeg = specType === 'ttc' ? 0.010 : 0.030;
+    const pass = deg <= maxDeg;
+    const color = pass ? '#2E7D32' : '#D32F2F';
+
+    const row = document.createElement('tr');
+    row.innerHTML = `<td style="padding:4px;border:1px solid #eee;font-weight:600">${recordStep}</td>
+        <td style="padding:4px;border:1px solid #eee">${p1.toFixed(4)}</td>
+        <td style="padding:4px;border:1px solid #eee">${p2.toFixed(4)}</td>
+        <td style="padding:4px;border:1px solid #eee">${p3.toFixed(4)}</td>
+        <td style="padding:4px;border:1px solid #eee">${d12.toFixed(4)}</td>
+        <td style="padding:4px;border:1px solid #eee">${d13.toFixed(4)}</td>
+        <td style="padding:4px;border:1px solid #eee">${d23.toFixed(4)}</td>
+        <td style="padding:4px;border:1px solid #eee;font-weight:700;color:${color}">${P.toFixed(4)}</td>
+        <td style="padding:4px;border:1px solid #eee;font-weight:700;color:${color}">${deg.toFixed(4)}°</td>`;
+    document.getElementById('recordBody').appendChild(row);
+}
+
+function clearRecord() {
+    document.getElementById('recordBody').innerHTML = '';
+    recordStep = 0;
+}
+
+// Update max P when radius changes
+document.getElementById('radiusR')?.addEventListener('input', updateSpecT);
+
+// ═══════════════════════════════════════════════════════════
+// USER AUTHENTICATION
+// ═══════════════════════════════════════════════════════════
+const USERS = [
+    { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
+    { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
+];
+
+function doLogin() {
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    const found = USERS.find(x => x.user === u && x.pass === p);
+    if (!found) { errEl.textContent = 'Invalid username or password.'; errEl.style.display = 'block'; return; }
+    if (!found.active) { errEl.textContent = 'Account disabled. Contact admin.'; errEl.style.display = 'block'; return; }
+    sessionStorage.setItem('kingpost_auth', JSON.stringify({user: found.user, role: found.role}));
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+}
+
+function doLogout() {
+    sessionStorage.removeItem('kingpost_auth');
+    location.reload();
+}
+
+(function() {
+    const auth = sessionStorage.getItem('kingpost_auth');
+    if (auth) {
+        try {
+            const data = JSON.parse(auth);
+            const valid = USERS.find(x => x.user === data.user && x.active);
+            if (valid) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+            }
+        } catch(e) {}
+    }
+})();
+</script>
+</div><!-- end appContent -->
+</body>
+</html>

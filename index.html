@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0D47A1">
+<title>Parabolix — Satellite Antenna Engineering Tools</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a1628;color:#fff;min-height:100vh}
+
+/* Login */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:linear-gradient(135deg,#0D47A1,#1A237E)}
+.login-box{background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:40px 32px;max-width:380px;width:100%;text-align:center}
+.login-logo{margin-bottom:20px}
+.login-box h1{font-size:28px;font-weight:700;margin-bottom:4px}
+.login-box .tagline{color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:28px}
+.login-box input{width:100%;padding:14px 16px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;font-size:15px;margin-bottom:14px;background:rgba(255,255,255,0.05);color:#fff}
+.login-box input::placeholder{color:rgba(255,255,255,0.4)}
+.login-box input:focus{outline:none;border-color:#FFD700}
+.login-box button{width:100%;padding:14px;background:linear-gradient(135deg,#FFD700,#FFA000);color:#1A237E;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer}
+.login-box button:active{opacity:.8}
+.login-error{color:#FF5252;font-size:13px;margin-top:10px;display:none}
+
+/* Dashboard */
+.app-content{display:none}
+.header{background:linear-gradient(135deg,#0D47A1,#1A237E);padding:20px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1)}
+.header h1{font-size:24px;font-weight:700}
+.header .tagline{color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px}
+.logout-btn{position:fixed;top:12px;right:14px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;z-index:200}
+.logout-btn:hover{background:rgba(255,255,255,0.2)}
+.container{max-width:800px;margin:0 auto;padding:24px 16px}
+.welcome{text-align:center;margin-bottom:24px}
+.welcome h2{font-size:18px;color:#90CAF9;margin-bottom:6px}
+.welcome p{font-size:13px;color:rgba(255,255,255,0.5)}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.tool-card{background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px 20px;text-align:center;cursor:pointer;transition:transform 0.2s,border-color 0.2s}
+.tool-card:hover{transform:translateY(-4px);border-color:rgba(255,215,0,0.4)}
+.tool-card:active{transform:translateY(0)}
+.tool-icon{font-size:36px;margin-bottom:12px}
+.tool-card h3{font-size:14px;font-weight:600;margin-bottom:6px;color:#fff}
+.tool-card p{font-size:11px;color:rgba(255,255,255,0.5);line-height:1.4}
+.tool-card .status{display:inline-block;margin-top:10px;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.status-live{background:rgba(76,175,80,0.2);color:#4CAF50}
+.status-soon{background:rgba(255,152,0,0.2);color:#FF9800}
+.footer{text-align:center;padding:30px 16px;font-size:11px;color:rgba(255,255,255,0.3);border-top:1px solid rgba(255,255,255,0.05);margin-top:30px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+<div class="login-box">
+    <div class="login-logo">
+        <canvas id="loginLogo" width="80" height="80"></canvas>
+    </div>
+    <h1>Parabolix</h1>
+    <p class="tagline">Satellite Antenna Engineering Tools</p>
+    <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">LOGIN</button>
+    <p class="login-error" id="loginError"></p>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="appContent" class="app-content">
+<button class="logout-btn" onclick="doLogout()">Logout</button>
+<div class="header">
+    <h1>Parabolix</h1>
+    <p class="tagline">Satellite Antenna Engineering Tools</p>
+</div>
+<div class="container">
+    <div class="welcome">
+        <h2 id="welcomeMsg">Welcome back</h2>
+        <p>Select a tool to get started</p>
+    </div>
+
+    <div class="tools-grid">
+        <div class="tool-card" onclick="openTool('resolver')">
+            <div class="tool-icon">🔧</div>
+            <h3>Resolver Alignment</h3>
+            <p>Calculate resolver pin alignment adjustments from dial indicator readings</p>
+            <span class="status status-live">Live</span>
+        </div>
+
+        <div class="tool-card" onclick="openTool('rms')">
+            <div class="tool-icon">📐</div>
+            <h3>RMS Surface Calculator</h3>
+            <p>Parabolic reflector surface accuracy from theodolite measurements</p>
+            <span class="status status-live">Live</span>
+        </div>
+
+        <div class="tool-card" onclick="openTool('pattern')">
+            <div class="tool-icon">📡</div>
+            <h3>Pattern Analyser</h3>
+            <p>Antenna radiation pattern plotting, analysis & ITU envelope overlay</p>
+            <span class="status status-live">Live</span>
+        </div>
+
+        <div class="tool-card" onclick="openTool('kingpost')">
+            <div class="tool-icon">⚖️</div>
+            <h3>Kingpost Leveling</h3>
+            <p>Pedestal verticality alignment using precision bubble level or theodolite</p>
+            <span class="status status-live">Live</span>
+        </div>
+
+        <div class="tool-card" onclick="openTool('simulsat')">
+            <div class="tool-icon">🛰️</div>
+            <h3>Simulsat Roll Angle</h3>
+            <p>Torus antenna roll, elevation & azimuth for any location and arc</p>
+            <span class="status status-live">Live</span>
+        </div>
+
+        <div class="tool-card" onclick="openTool('lookangles')">
+            <div class="tool-icon">🌍</div>
+            <h3>Look Angles</h3>
+            <p>Satellite azimuth, elevation & polarization from any earth station</p>
+            <span class="status status-soon">Coming Soon</span>
+        </div>
+    </div>
+</div>
+<div class="footer">
+    Parabolix v1.0 &mdash; Built by Shaik Nasar Vali &mdash; Satellite Antenna Engineering Tools
+</div>
+</div>
+
+<script>
+// Draw mini logo on login page
+(function(){
+    const c = document.getElementById('loginLogo');
+    const ctx = c.getContext('2d');
+    const s = 80;
+    // Parabola
+    ctx.beginPath();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2.5;
+    for(let i=-1;i<=1;i+=0.03){
+        const x=s/2+i*32;
+        const y=s*0.75-(1-i*i)*40;
+        if(i===-1)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // Focus
+    ctx.beginPath();
+    ctx.fillStyle='#FFD700';
+    ctx.arc(s/2,s*0.4,4,0,Math.PI*2);
+    ctx.fill();
+    // Glow
+    const g=ctx.createRadialGradient(s/2,s*0.4,0,s/2,s*0.4,12);
+    g.addColorStop(0,'rgba(255,215,0,0.4)');
+    g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.arc(s/2,s*0.4,12,0,Math.PI*2);
+    ctx.fill();
+})();
+
+// Tool navigation
+function openTool(tool) {
+    const urls = {
+        resolver: './resolver/index.html',
+        rms: './rms/index.html',
+        pattern: './pattern/index.html',
+        kingpost: './kingpost/index.html',
+        simulsat: './simulsat/index.html',
+        lookangles: '#'
+    };
+    if (urls[tool] === '#') { alert('Coming soon!'); return; }
+    window.location.href = urls[tool];
+}
+
+// Auth
+const USERS = [
+    { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
+    { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
+];
+
+function doLogin() {
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    const found = USERS.find(x => x.user === u && x.pass === p);
+    if (!found) { errEl.textContent = 'Invalid username or password.'; errEl.style.display = 'block'; return; }
+    if (!found.active) { errEl.textContent = 'Account disabled. Contact admin.'; errEl.style.display = 'block'; return; }
+    sessionStorage.setItem('parabolix_auth', JSON.stringify({user: found.user, role: found.role}));
+    showApp(found.user);
+}
+
+function doLogout() { sessionStorage.removeItem('parabolix_auth'); location.reload(); }
+
+function showApp(username) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    if (username) document.getElementById('welcomeMsg').textContent = 'Welcome, ' + username;
+}
+
+(function(){
+    const auth = sessionStorage.getItem('parabolix_auth');
+    if(auth){try{const d=JSON.parse(auth);const v=USERS.find(x=>x.user===d.user&&x.active);if(v){showApp(d.user);}}catch(e){}}
+})();
+</script>
+</body>
+</html>

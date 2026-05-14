@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0D47A1">
+<title>Simulsat Roll Angle Calculator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#E3F2FD;color:#333;font-size:14px;min-height:100vh}
+/* Login */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.login-box{background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:360px;width:100%;text-align:center}
+.login-box h2{color:#0D47A1;font-size:20px;margin-bottom:6px}
+.login-box p{color:#666;font-size:13px;margin-bottom:20px}
+.login-box input{width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;margin-bottom:12px}
+.login-box input:focus{outline:none;border-color:#0D47A1}
+.login-box button{width:100%;padding:13px;background:#0D47A1;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
+.login-box button:active{background:#0A3A7A}
+.login-error{color:#D32F2F;font-size:13px;margin-top:8px;display:none}
+.app-content{display:none}
+.logout-btn{position:fixed;top:10px;right:12px;background:#D32F2F;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;z-index:200}
+.header{background:#0D47A1;color:#fff;padding:14px 16px;text-align:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;font-weight:700}
+.header p{font-size:11px;opacity:.7;margin-top:2px}
+.container{max-width:520px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:12px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card h2{font-size:13px;color:#0D47A1;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #E3F2FD}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.row label{font-size:12px;color:#555;font-weight:600;min-width:130px}
+input[type="number"],select{padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;max-width:150px}
+input:focus,select:focus{outline:none;border-color:#0D47A1}
+.btn{padding:14px 20px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;width:100%;background:#0D47A1;color:#fff}
+.btn:active{opacity:.7}
+.result-box{background:#f5f5f5;border-radius:10px;padding:16px;margin-top:14px}
+.result-big{font-size:28px;font-weight:700;text-align:center;color:#0D47A1;margin:8px 0}
+.result-sub{font-size:14px;text-align:center;color:#555;margin:4px 0}
+.detail{font-size:12px;color:#555;margin-top:12px;line-height:1.7;background:#fafafa;padding:12px;border-radius:8px}
+.detail b{color:#333}
+.note{font-size:11px;color:#777;font-style:italic;margin-top:8px}
+.sign-note{background:#FFF3E0;border-left:4px solid #FF9800;padding:10px;border-radius:0 8px 8px 0;margin:10px 0;font-size:12px}
+.formula-box{background:#f0f4f8;padding:14px;border-radius:8px;font-family:Consolas,monospace;font-size:12px;margin:10px 0;line-height:1.6;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-screen">
+<div class="login-box">
+<h2>🛰️ Simulsat Calculator</h2>
+<p>Enter credentials to continue</p>
+<input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+<input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+<button onclick="doLogin()">LOGIN</button>
+<p class="login-error" id="loginError"></p>
+</div>
+</div>
+
+<!-- APP CONTENT -->
+<div id="appContent" class="app-content">
+<button class="logout-btn" onclick="doLogout()">Logout</button>
+<div class="header">
+    <h1>Simulsat Roll Angle Calculator</h1>
+    <p>Torus Antenna Setup — ATCi Method</p>
+</div>
+<div class="container">
+
+<div class="card">
+    <h2>Earth Station Location</h2>
+    <div class="row">
+        <label>City / Site Name:</label>
+        <input type="text" id="cityName" value="Chennai" placeholder="City name" style="max-width:200px">
+    </div>
+    <div class="row">
+        <label>Latitude:</label>
+        <input type="number" id="lat" value="12.65" step="any" placeholder="degrees">
+        <select id="latDir"><option value="N">North</option><option value="S">South</option></select>
+    </div>
+    <div class="row">
+        <label>Longitude:</label>
+        <input type="number" id="lon" value="80.14" step="any" placeholder="degrees">
+        <select id="lonDir"><option value="E">East</option><option value="W">West</option></select>
+    </div>
+    <div class="row">
+        <label>Engineer:</label>
+        <input type="text" id="engineer" value="Shaik Nasar Vali" placeholder="Name" style="max-width:200px">
+    </div>
+</div>
+
+<div class="card">
+    <h2>Satellite Arc</h2>
+    <div class="row">
+        <label>Arc Start (deg E):</label>
+        <input type="number" id="arcStart" value="70" step="any">
+    </div>
+    <div class="row">
+        <label>Arc End (deg E):</label>
+        <input type="number" id="arcEnd" value="140" step="any">
+    </div>
+    <div class="row">
+        <label>Arc Center (deg E):</label>
+        <input type="number" id="arcCenter" step="any" placeholder="auto">
+    </div>
+    <p class="note">Leave Arc Center blank to auto-calculate from start/end midpoint.</p>
+    <div class="row">
+        <label>Feed Box Width:</label>
+        <input type="number" id="feedWidth" value="70" step="any" placeholder="degrees">
+    </div>
+</div>
+
+<div class="card">
+    <button class="btn" onclick="calculate()">CALCULATE</button>
+    <button class="btn" style="margin-top:8px;background:#455A64" onclick="printPDF()">📄 Print / Save PDF</button>
+    <button class="btn" style="margin-top:8px;background:#6A1B9A" onclick="addToCompare()">+ Add to Comparison</button>
+    <div id="resultArea"></div>
+</div>
+
+<!-- Comparison Section -->
+<div class="card" id="compareCard" style="display:none">
+    <h2>Site Comparison</h2>
+    <div id="compareTable"></div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn" style="background:#6A1B9A;flex:1" onclick="printComparison()">📄 Print Comparison PDF</button>
+        <button class="btn" style="background:#D32F2F;flex:1;font-size:12px" onclick="clearComparison()">Clear</button>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Single Satellite Lookup</h2>
+    <p class="note">Check azimuth & elevation to any GEO satellite from your site.</p>
+    <div class="row">
+        <label>Satellite Longitude:</label>
+        <input type="number" id="satLon" value="97" step="any" placeholder="deg E">
+        <button style="padding:8px 14px;background:#0D47A1;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer" onclick="calcSingleSat()">Go</button>
+    </div>
+    <div id="satResult"></div>
+</div>
+
+<div class="card">
+    <h2>Sign Convention</h2>
+    <div class="sign-note">
+        <b>Northern Hemisphere:</b><br>
+        Negative roll = East end of Simulsat is elevated<br>
+        Positive roll = West end of Simulsat is elevated<br><br>
+        <b>Southern Hemisphere:</b><br>
+        Opposite convention (per ATCi note)
+    </div>
+</div>
+
+<div class="card">
+    <h2>Formulas</h2>
+    <div class="formula-box"><b>Roll Angle:</b>
+  gamma = arctan( sin(delta_lambda) / tan(latitude) )
+
+  delta_lambda = Arc_Center_Lon - Site_Lon
+  (positive = arc center is East of site)
+
+<b>Elevation to Centerline Satellite:</b>
+  cos(g) = cos(delta_lambda) * cos(lat)
+  El = arctan( (cos(g) - 0.1513) / sqrt(1 - cos(g)^2) )
+  0.1513 = Earth_radius / GEO_orbit_radius
+
+<b>Azimuth to Centerline Satellite:</b>
+  Az = 180 + arctan( tan(delta_lambda) / sin(lat) )
+
+<b>Verified against ATCi data:</b>
+  Chennai 12.65N, 80.14E, Arc 104.5E -> Roll = 61.4 (calc: 61.5)
+  Chennai 13.13N, 80.17E, Arc 89.5E  -> Roll = 33.3 (calc: 34.8)
+    </div>
+</div>
+
+</div>
+
+<script>
+function calculate() {
+    let lat = parseFloat(document.getElementById('lat').value);
+    const latDir = document.getElementById('latDir').value;
+    let lon = parseFloat(document.getElementById('lon').value);
+    const lonDir = document.getElementById('lonDir').value;
+    const arcStart = parseFloat(document.getElementById('arcStart').value);
+    const arcEnd = parseFloat(document.getElementById('arcEnd').value);
+    let arcCenter = parseFloat(document.getElementById('arcCenter').value);
+    const feedWidth = parseFloat(document.getElementById('feedWidth').value) || 70;
+
+    const area = document.getElementById('resultArea');
+
+    if (isNaN(lat) || isNaN(lon)) {
+        area.innerHTML = '<div class="result-box"><p style="color:red;text-align:center">Enter valid coordinates.</p></div>';
+        return;
+    }
+
+    // Convert to signed values
+    if (latDir === 'S') lat = -lat;
+    if (lonDir === 'W') lon = -lon;
+
+    // Auto-calculate arc center if not provided
+    if (isNaN(arcCenter)) {
+        arcCenter = (arcStart + arcEnd) / 2;
+    }
+
+    // delta lambda = arc center longitude - site longitude
+    const deltaLambda = arcCenter - lon;
+
+    // Convert to radians
+    const latRad = lat * Math.PI / 180;
+    const dlRad = deltaLambda * Math.PI / 180;
+
+    // Roll angle: gamma = arctan(sin(delta_lambda) / tan(lat))
+    const rollRad = Math.atan2(Math.sin(dlRad), Math.tan(latRad));
+    let rollDeg = rollRad * 180 / Math.PI;
+
+    // Elevation to centerline satellite
+    const cosGamma = Math.cos(dlRad) * Math.cos(latRad);
+    const ReR = 6378.137 / 42164.0;
+    const sinGamma = Math.sqrt(1 - cosGamma * cosGamma);
+    const elRad = Math.atan2(cosGamma - ReR, sinGamma);
+    const elDeg = elRad * 180 / Math.PI;
+
+    // Azimuth to centerline satellite
+    // For Northern hemisphere: Az = 180 - arctan(tan(Δλ) / sin(lat)) when Δλ is positive East
+    let azDeg;
+    if (lat >= 0) {
+        azDeg = 180 - Math.atan2(Math.tan(dlRad), Math.sin(latRad)) * 180 / Math.PI;
+    } else {
+        azDeg = 360 - Math.atan2(Math.tan(dlRad), Math.sin(latRad)) * 180 / Math.PI;
+    }
+    if (azDeg < 0) azDeg += 360;
+    if (azDeg >= 360) azDeg -= 360;
+
+    // Arc edge elevations and azimuths
+    const dlStart = (arcStart - lon) * Math.PI / 180;
+    const dlEnd = (arcEnd - lon) * Math.PI / 180;
+    const cosG_start = Math.cos(dlStart) * Math.cos(latRad);
+    const cosG_end = Math.cos(dlEnd) * Math.cos(latRad);
+    const el_start = Math.atan2(cosG_start - ReR, Math.sqrt(1 - cosG_start*cosG_start)) * 180 / Math.PI;
+    const el_end = Math.atan2(cosG_end - ReR, Math.sqrt(1 - cosG_end*cosG_end)) * 180 / Math.PI;
+
+    // Arc edge azimuths
+    let az_start, az_end;
+    if (lat >= 0) {
+        az_start = 180 - Math.atan2(Math.tan(dlStart), Math.sin(latRad)) * 180 / Math.PI;
+        az_end = 180 - Math.atan2(Math.tan(dlEnd), Math.sin(latRad)) * 180 / Math.PI;
+    } else {
+        az_start = 360 - Math.atan2(Math.tan(dlStart), Math.sin(latRad)) * 180 / Math.PI;
+        az_end = 360 - Math.atan2(Math.tan(dlEnd), Math.sin(latRad)) * 180 / Math.PI;
+    }
+    if (az_start < 0) az_start += 360;
+    if (az_end < 0) az_end += 360;
+    if (az_start >= 360) az_start -= 360;
+    if (az_end >= 360) az_end -= 360;
+
+    // Sign convention
+    let signNote = '';
+    if (rollDeg > 0) {
+        signNote = lat >= 0 ? 'West end elevated' : 'East end elevated';
+    } else {
+        signNote = lat >= 0 ? 'East end elevated' : 'West end elevated';
+    }
+
+    let html = '<div class="result-box">';
+    html += '<div class="result-sub">SS Roll Angle</div>';
+    html += '<div class="result-big">' + rollDeg.toFixed(1) + '\u00B0</div>';
+    html += '<div class="result-sub">' + signNote + '</div>';
+    html += '</div>';
+
+    html += '<div class="result-box" style="margin-top:10px">';
+    html += '<div class="result-sub"><b>Simulsat Setup Parameters</b></div>';
+    html += '<table style="width:100%;font-size:13px;margin-top:8px;border-collapse:collapse">';
+    html += '<tr style="background:#E3F2FD"><th style="padding:6px;text-align:left">Parameter</th><th style="padding:6px;text-align:center">Value</th></tr>';
+    html += '<tr><td style="padding:5px;border-bottom:1px solid #eee">SS Roll Angle</td><td style="padding:5px;text-align:center;font-weight:700;color:#0D47A1;border-bottom:1px solid #eee">' + rollDeg.toFixed(1) + '\u00B0</td></tr>';
+    html += '<tr><td style="padding:5px;border-bottom:1px solid #eee">SS Elevation</td><td style="padding:5px;text-align:center;font-weight:700;border-bottom:1px solid #eee">' + elDeg.toFixed(1) + '\u00B0</td></tr>';
+    html += '<tr><td style="padding:5px;border-bottom:1px solid #eee">SS True Azimuth</td><td style="padding:5px;text-align:center;font-weight:700;border-bottom:1px solid #eee">' + azDeg.toFixed(1) + '\u00B0</td></tr>';
+    html += '<tr style="background:#FFF8E1"><td style="padding:5px;border-bottom:1px solid #eee"><b>Foundation Heading</b></td><td style="padding:5px;text-align:center;font-weight:700;color:#E65100;border-bottom:1px solid #eee">' + azDeg.toFixed(2) + '\u00B0</td></tr>';
+    html += '<tr><td style="padding:5px;border-bottom:1px solid #eee">Arc Center Longitude</td><td style="padding:5px;text-align:center;border-bottom:1px solid #eee">' + arcCenter.toFixed(1) + '\u00B0E</td></tr>';
+    html += '<tr><td style="padding:5px;border-bottom:1px solid #eee">Feed Box Width</td><td style="padding:5px;text-align:center;border-bottom:1px solid #eee">' + feedWidth + '\u00B0</td></tr>';
+    html += '</table>';
+    html += '</div>';
+
+    // Arc edges table
+    html += '<div class="result-box" style="margin-top:10px">';
+    html += '<div class="result-sub"><b>Arc Coverage Details</b></div>';
+    html += '<table style="width:100%;font-size:12px;margin-top:8px;border-collapse:collapse">';
+    html += '<tr style="background:#E8F5E9"><th style="padding:5px;text-align:left">Position</th><th style="padding:5px">Longitude</th><th style="padding:5px">Azimuth</th><th style="padding:5px">Elevation</th></tr>';
+    html += '<tr><td style="padding:5px;border-bottom:1px solid #eee">Arc Start</td><td style="padding:5px;text-align:center;border-bottom:1px solid #eee">' + arcStart.toFixed(1) + '\u00B0E</td><td style="padding:5px;text-align:center;border-bottom:1px solid #eee">' + az_start.toFixed(1) + '\u00B0</td><td style="padding:5px;text-align:center;border-bottom:1px solid #eee">' + el_start.toFixed(1) + '\u00B0</td></tr>';
+    html += '<tr style="background:#f9f9f9"><td style="padding:5px;border-bottom:1px solid #eee"><b>Arc Center</b></td><td style="padding:5px;text-align:center;border-bottom:1px solid #eee"><b>' + arcCenter.toFixed(1) + '\u00B0E</b></td><td style="padding:5px;text-align:center;border-bottom:1px solid #eee"><b>' + azDeg.toFixed(1) + '\u00B0</b></td><td style="padding:5px;text-align:center;border-bottom:1px solid #eee"><b>' + elDeg.toFixed(1) + '\u00B0</b></td></tr>';
+    html += '<tr><td style="padding:5px">Arc End</td><td style="padding:5px;text-align:center">' + arcEnd.toFixed(1) + '\u00B0E</td><td style="padding:5px;text-align:center">' + az_end.toFixed(1) + '\u00B0</td><td style="padding:5px;text-align:center">' + el_end.toFixed(1) + '\u00B0</td></tr>';
+    html += '</table>';
+    html += '</div>';
+
+    html += '<div class="detail">';
+    html += '<b>Calculation Details:</b><br>';
+    html += 'Site: ' + Math.abs(lat).toFixed(2) + '\u00B0' + (lat>=0?'N':'S') + ', ' + Math.abs(lon).toFixed(2) + '\u00B0' + (lon>=0?'E':'W') + '<br>';
+    html += '\u0394\u03BB = ' + arcCenter.toFixed(1) + '\u00B0 \u2212 ' + lon.toFixed(2) + '\u00B0 = ' + deltaLambda.toFixed(2) + '\u00B0<br>';
+    html += 'Roll = arctan(sin(' + deltaLambda.toFixed(2) + '\u00B0) / tan(' + lat.toFixed(2) + '\u00B0))<br>';
+    html += 'Roll = arctan(' + Math.sin(dlRad).toFixed(4) + ' / ' + Math.tan(latRad).toFixed(4) + ')<br>';
+    html += 'Roll = <b>' + rollDeg.toFixed(2) + '\u00B0</b>';
+    html += '</div>';
+
+    area.innerHTML = html;
+}
+
+function calcSingleSat() {
+    let lat = parseFloat(document.getElementById('lat').value);
+    const latDir = document.getElementById('latDir').value;
+    let lon = parseFloat(document.getElementById('lon').value);
+    const lonDir = document.getElementById('lonDir').value;
+    const satLon = parseFloat(document.getElementById('satLon').value);
+    const area = document.getElementById('satResult');
+
+    if (isNaN(lat) || isNaN(lon) || isNaN(satLon)) {
+        area.innerHTML = '<p style="color:red;font-size:12px">Enter valid values.</p>';
+        return;
+    }
+
+    if (latDir === 'S') lat = -lat;
+    if (lonDir === 'W') lon = -lon;
+
+    const dlRad = (satLon - lon) * Math.PI / 180;
+    const latRad = lat * Math.PI / 180;
+    const ReR = 6378.137 / 42164.0;
+
+    const cosG = Math.cos(dlRad) * Math.cos(latRad);
+    const sinG = Math.sqrt(1 - cosG * cosG);
+    const el = Math.atan2(cosG - ReR, sinG) * 180 / Math.PI;
+
+    let az;
+    if (lat >= 0) {
+        az = 180 - Math.atan2(Math.tan(dlRad), Math.sin(latRad)) * 180 / Math.PI;
+    } else {
+        az = 360 - Math.atan2(Math.tan(dlRad), Math.sin(latRad)) * 180 / Math.PI;
+    }
+    if (az < 0) az += 360;
+    if (az >= 360) az -= 360;
+
+    // Range
+    const range = 42164 * Math.sqrt(1 + (ReR*ReR) - 2*ReR*cosG);
+
+    let html = '<div style="background:#f5f5f5;border-radius:8px;padding:10px;margin-top:8px;font-size:13px">';
+    html += '<b>Satellite at ' + satLon.toFixed(1) + '\u00B0E</b> from ' + Math.abs(lat).toFixed(2) + '\u00B0' + (lat>=0?'N':'S') + ', ' + Math.abs(lon).toFixed(2) + '\u00B0' + (lon>=0?'E':'W') + '<br>';
+    html += 'Azimuth: <b>' + az.toFixed(2) + '\u00B0</b><br>';
+    html += 'Elevation: <b>' + el.toFixed(2) + '\u00B0</b><br>';
+    html += 'Range: <b>' + range.toFixed(0) + ' km</b>';
+    if (el < 0) html += '<br><span style="color:red">Below horizon - not visible!</span>';
+    html += '</div>';
+    area.innerHTML = html;
+}
+
+function printPDF() {
+    calculate();
+    const resultArea = document.getElementById('resultArea');
+    if (!resultArea.innerHTML) { alert('Calculate first!'); return; }
+
+    const cityName = document.getElementById('cityName').value || 'Unknown';
+    const engineer = document.getElementById('engineer').value || '';
+    const lat = document.getElementById('lat').value;
+    const latDir = document.getElementById('latDir').value;
+    const lon = document.getElementById('lon').value;
+    const lonDir = document.getElementById('lonDir').value;
+    const arcStart = document.getElementById('arcStart').value;
+    const arcEnd = document.getElementById('arcEnd').value;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+
+    const printWin = window.open('', '_blank');
+    printWin.document.write('<html><head><title>Simulsat Report - ' + cityName + '</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:30px;color:#333;font-size:13px}' +
+    'h1{color:#0D47A1;font-size:20px;margin-bottom:4px}' +
+    'h2{color:#333;font-size:14px;margin-bottom:16px;font-weight:normal}' +
+    '.header-info{margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #0D47A1}' +
+    '.header-info p{margin:3px 0;font-size:12px}' +
+    'table{width:100%;border-collapse:collapse;margin:12px 0}' +
+    'th,td{padding:8px 12px;border:1px solid #ddd;text-align:left;font-size:12px}' +
+    'th{background:#E3F2FD;font-weight:600}' +
+    '.footer{margin-top:30px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#999;text-align:center}' +
+    '@media print{body{padding:20px}}</style></head><body>' +
+    '<div class="header-info">' +
+    '<h1>Simulsat Roll Angle Calculation Report</h1>' +
+    '<h2>Antenna Technology Communications Method</h2>' +
+    '<p><b>Site:</b> ' + cityName + ' (' + lat + '\u00B0 ' + latDir + ', ' + lon + '\u00B0 ' + lonDir + ')</p>' +
+    '<p><b>Arc Coverage:</b> ' + arcStart + '\u00B0E to ' + arcEnd + '\u00B0E</p>' +
+    '<p><b>Engineer:</b> ' + engineer + '</p>' +
+    '<p><b>Date/Time:</b> ' + dateStr + '</p>' +
+    '</div>' +
+    resultArea.innerHTML +
+    '<div class="footer">Generated by Simulsat Roll Angle Calculator | Engineer: ' + engineer + ' | ' + dateStr + '</div>' +
+    '</body></html>');
+    printWin.document.close();
+    setTimeout(function() { printWin.print(); }, 500);
+}
+
+// COMPARISON
+var compareData = [];
+
+function addToCompare() {
+    calculate();
+    var lat = parseFloat(document.getElementById('lat').value);
+    var latDir = document.getElementById('latDir').value;
+    var lon = parseFloat(document.getElementById('lon').value);
+    var lonDir = document.getElementById('lonDir').value;
+    var cityName = document.getElementById('cityName').value || 'Site ' + (compareData.length + 1);
+    var arcStart = parseFloat(document.getElementById('arcStart').value);
+    var arcEnd = parseFloat(document.getElementById('arcEnd').value);
+    var arcCenter = parseFloat(document.getElementById('arcCenter').value);
+
+    if (latDir === 'S') lat = -lat;
+    if (lonDir === 'W') lon = -lon;
+    if (isNaN(arcCenter)) arcCenter = (arcStart + arcEnd) / 2;
+
+    var dlRad = (arcCenter - lon) * Math.PI / 180;
+    var latRad = lat * Math.PI / 180;
+    var ReR = 6378.137 / 42164.0;
+
+    var rollDeg = Math.atan2(Math.sin(dlRad), Math.tan(latRad)) * 180 / Math.PI;
+    var cosG = Math.cos(dlRad) * Math.cos(latRad);
+    var elDeg = Math.atan2(cosG - ReR, Math.sqrt(1 - cosG*cosG)) * 180 / Math.PI;
+    var azDeg = (lat >= 0)
+        ? 180 - Math.atan2(Math.tan(dlRad), Math.sin(latRad)) * 180 / Math.PI
+        : 360 - Math.atan2(Math.tan(dlRad), Math.sin(latRad)) * 180 / Math.PI;
+
+    compareData.push({
+        city: cityName,
+        lat: Math.abs(lat).toFixed(2) + '\u00B0' + (lat>=0?'N':'S'),
+        lon: Math.abs(lon).toFixed(2) + '\u00B0' + (lon>=0?'E':'W'),
+        arcStart: arcStart + '\u00B0E',
+        arcEnd: arcEnd + '\u00B0E',
+        arcCenter: arcCenter.toFixed(1) + '\u00B0E',
+        roll: rollDeg.toFixed(1) + '\u00B0',
+        elevation: elDeg.toFixed(1) + '\u00B0',
+        azimuth: azDeg.toFixed(1) + '\u00B0'
+    });
+    renderComparison();
+    alert(cityName + ' added to comparison (' + compareData.length + ' sites).');
+}
+
+function renderComparison() {
+    if (compareData.length === 0) { document.getElementById('compareCard').style.display = 'none'; return; }
+    document.getElementById('compareCard').style.display = 'block';
+    var html = '<table style="width:100%;font-size:11px;border-collapse:collapse">';
+    html += '<tr style="background:#6A1B9A;color:#fff"><th style="padding:6px">Site</th><th>Lat/Lon</th><th>Arc Start</th><th>Arc End</th><th>Arc Center</th><th>Roll</th><th>Elevation</th><th>Azimuth<br>(Foundation)</th></tr>';
+    for (var i = 0; i < compareData.length; i++) {
+        var d = compareData[i];
+        html += '<tr><td style="padding:5px;border:1px solid #eee;font-weight:600">' + d.city + '</td>';
+        html += '<td style="padding:5px;border:1px solid #eee;font-size:10px">' + d.lat + ', ' + d.lon + '</td>';
+        html += '<td style="padding:5px;border:1px solid #eee">' + d.arcStart + '</td>';
+        html += '<td style="padding:5px;border:1px solid #eee">' + d.arcEnd + '</td>';
+        html += '<td style="padding:5px;border:1px solid #eee;font-weight:600">' + d.arcCenter + '</td>';
+        html += '<td style="padding:5px;border:1px solid #eee;font-weight:700;color:#0D47A1">' + d.roll + '</td>';
+        html += '<td style="padding:5px;border:1px solid #eee">' + d.elevation + '</td>';
+        html += '<td style="padding:5px;border:1px solid #eee;font-weight:600;color:#E65100">' + d.azimuth + '</td></tr>';
+    }
+    html += '</table>';
+    document.getElementById('compareTable').innerHTML = html;
+}
+
+function clearComparison() { compareData = []; renderComparison(); }
+
+function printComparison() {
+    if (compareData.length === 0) { alert('Add sites first.'); return; }
+    var engineer = document.getElementById('engineer').value || '';
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+
+    var tableHtml = '<table><tr style="background:#0D47A1;color:#fff"><th>Site</th><th>Latitude</th><th>Longitude</th><th>Arc Start</th><th>Arc End</th><th>Arc Center</th><th>Roll Angle</th><th>Elevation</th><th>Azimuth<br>(Foundation)</th></tr>';
+    for (var i = 0; i < compareData.length; i++) {
+        var d = compareData[i];
+        tableHtml += '<tr><td style="font-weight:600">' + d.city + '</td><td>' + d.lat + '</td><td>' + d.lon + '</td><td>' + d.arcStart + '</td><td>' + d.arcEnd + '</td><td style="font-weight:600">' + d.arcCenter + '</td><td style="font-weight:700;color:#0D47A1">' + d.roll + '</td><td>' + d.elevation + '</td><td style="font-weight:600;color:#E65100">' + d.azimuth + '</td></tr>';
+    }
+    tableHtml += '</table>';
+
+    var printWin = window.open('', '_blank');
+    printWin.document.write('<html><head><title>Simulsat Comparison</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:30px;color:#333;font-size:13px}' +
+    'h1{color:#0D47A1;font-size:20px;margin-bottom:4px}h2{color:#555;font-size:13px;margin-bottom:16px}' +
+    'table{width:100%;border-collapse:collapse;margin:16px 0}' +
+    'th,td{padding:8px 10px;border:1px solid #ddd;text-align:center;font-size:11px}' +
+    'th{background:#E3F2FD;font-weight:600;font-size:10px}' +
+    '.footer{margin-top:30px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#999;text-align:center}' +
+    '@media print{body{padding:20px}}</style></head><body>' +
+    '<h1>Simulsat Roll Angle \u2014 Multi-Site Comparison</h1>' +
+    '<h2>Engineer: ' + engineer + ' | Date: ' + dateStr + ' | Sites: ' + compareData.length + '</h2>' +
+    tableHtml +
+    '<p style="font-size:11px;color:#555;margin-top:12px"><b>Formula:</b> Roll = arctan(sin(\u0394\u03BB) / tan(latitude))</p>' +
+    '<div class="footer">Generated by Simulsat Roll Angle Calculator | ' + engineer + ' | ' + dateStr + '</div>' +
+    '</body></html>');
+    printWin.document.close();
+    setTimeout(function() { printWin.print(); }, 500);
+}
+
+// USER AUTHENTICATION
+const USERS = [
+    { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
+    { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
+];
+
+function doLogin() {
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    const found = USERS.find(x => x.user === u && x.pass === p);
+    if (!found) { errEl.textContent = 'Invalid username or password.'; errEl.style.display = 'block'; return; }
+    if (!found.active) { errEl.textContent = 'Account disabled. Contact admin.'; errEl.style.display = 'block'; return; }
+    sessionStorage.setItem('simulsat_auth', JSON.stringify({user: found.user, role: found.role}));
+    showApp();
+}
+
+function doLogout() { sessionStorage.removeItem('simulsat_auth'); location.reload(); }
+
+function showApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    calculate();
+}
+
+(function() {
+    const auth = sessionStorage.getItem('simulsat_auth');
+    if (auth) { try { const d = JSON.parse(auth); if (USERS.find(x => x.user === d.user && x.active)) { showApp(); } } catch(e) {} }
+})();
+
+document.getElementById('loginPass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+</script>
+</div>
+</body>
+</html>

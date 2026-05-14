@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1565C0">
+    <title>RMS Surface Calculator v2</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; color: #333; font-size: 14px; }
+        /* Login Screen */
+        .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
+        .login-box { background: #fff; border-radius: 16px; padding: 32px 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 360px; width: 100%; text-align: center; }
+        .login-box h2 { color: #1565C0; font-size: 20px; margin-bottom: 6px; }
+        .login-box p { color: #666; font-size: 13px; margin-bottom: 20px; }
+        .login-box input { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; margin-bottom: 12px; }
+        .login-box input:focus { outline: none; border-color: #1565C0; }
+        .login-box button { width: 100%; padding: 13px; background: #1565C0; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .login-box button:active { background: #0D47A1; }
+        .login-error { color: #D32F2F; font-size: 13px; margin-top: 8px; display: none; }
+        .app-content { display: none; }
+        .logout-btn { position: fixed; top: 10px; right: 12px; background: #D32F2F; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; z-index: 200; }
+        .header { background: #1565C0; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 16px; font-weight: 700; }
+        .header .ver { font-size: 11px; opacity: 0.8; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 12px; }
+        .card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+        .card h2 { font-size: 13px; color: #1565C0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .row label { font-size: 12px; color: #555; font-weight: 500; min-width: 100px; }
+        select, input[type="number"], input[type="text"] { padding: 8px 10px; border: 1.5px solid #ddd; border-radius: 6px; font-size: 13px; }
+        select:focus, input:focus { outline: none; border-color: #1565C0; }
+        select { background: #fff; }
+        .btn { padding: 10px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        .btn:active { opacity: 0.7; }
+        .btn-primary { background: #1565C0; color: white; }
+        .btn-green { background: #2E7D32; color: white; }
+        .btn-orange { background: #E65100; color: white; }
+        .btn-purple { background: #7B1FA2; color: white; }
+        .btn-teal { background: #00695C; color: white; }
+        .btn-gray { background: #455A64; color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .table-wrap { overflow-x: auto; max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px; }
+        table { border-collapse: collapse; font-size: 12px; width: 100%; }
+        th { background: #1565C0; color: white; padding: 6px 4px; position: sticky; top: 0; z-index: 10; font-size: 11px; }
+        td { padding: 2px; border: 1px solid #eee; text-align: center; }
+        td input { width: 58px; padding: 5px 3px; border: 1px solid #e0e0e0; border-radius: 3px; text-align: center; font-size: 13px; }
+        td input:focus { border-color: #1565C0; outline: none; background: #E3F2FD; }
+        .tgt-col { background: #f5f5f5; font-weight: 600; width: 36px; }
+        .ideal-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .ideal-group { display: flex; align-items: center; gap: 2px; background: #E8F5E9; padding: 4px 8px; border-radius: 6px; }
+        .ideal-group label { font-size: 11px; font-weight: 600; color: #2E7D32; min-width: auto; }
+        .ideal-group input { width: 40px; padding: 4px; font-size: 12px; }
+        .ideal-group .point { font-size: 10px; color: #D32F2F; font-weight: 600; margin-left: 4px; }
+        .k-table { width: 100%; font-size: 12px; }
+        .k-table th { background: #FFF3E0; color: #E65100; font-size: 11px; padding: 4px; }
+        .k-table td { padding: 4px; }
+        .k-table input { width: 42px; padding: 3px; font-size: 12px; text-align: center; border: 1px solid #ddd; border-radius: 3px; }
+        .k-val { font-weight: 700; color: #E65100; }
+        .results-box { background: #f9f9f9; border-radius: 8px; padding: 16px; font-family: 'Consolas', monospace; font-size: 12px; white-space: pre-wrap; max-height: 500px; overflow-y: auto; }
+        .rms-big { font-size: 18px; font-weight: 700; color: #2E7D32; }
+        .warn { color: #D32F2F; }
+        .info { color: #555; }
+        .notes { font-size: 11px; color: #777; font-style: italic; margin-top: 4px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; overflow-y: auto; padding: 20px; }
+        .modal-overlay.visible { display: flex; justify-content: center; align-items: flex-start; }
+        .modal { background: white; border-radius: 12px; padding: 24px; max-width: 650px; width: 100%; max-height: 80vh; overflow-y: auto; }
+        .modal h2 { color: #1565C0; margin-bottom: 12px; }
+        .modal pre { font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+        .modal-close { float: right; font-size: 24px; cursor: pointer; color: #999; border: none; background: none; }
+        @media (max-width: 768px) {
+            .container { padding: 8px; }
+            .card { padding: 12px; }
+            td input { width: 48px; font-size: 12px; }
+            .ideal-group input { width: 34px; }
+        }
+    </style>
+</head>
+<body>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-screen">
+    <div class="login-box">
+        <h2>📐 RMS Surface Calculator</h2>
+        <p>Enter credentials to continue</p>
+        <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+        <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+        <button onclick="doLogin()">LOGIN</button>
+        <p class="login-error" id="loginError"></p>
+    </div>
+</div>
+
+<!-- APP CONTENT (hidden until login) -->
+<div id="appContent" class="app-content">
+<button class="logout-btn" onclick="doLogout()">Logout</button>
+<div class="header">
+    <div><h1>RMS Surface Calculator</h1></div>
+    <div class="ver">v2.0 — Multi-Antenna</div>
+</div>
+<div class="container">
+
+<!-- Antenna Selection -->
+<div class="card">
+    <h2>Antenna Selection</h2>
+    <div class="row">
+        <label>Antenna:</label>
+        <select id="antennaSelect" onchange="onAntennaChange()"></select>
+        <button class="btn btn-primary btn-sm" onclick="applyAntenna()">Apply & Generate</button>
+    </div>
+    <div class="row">
+        <label>Diameter (in):</label>
+        <input type="number" id="diameter" step="any" style="width:80px">
+        <label>Depth (in):</label>
+        <input type="number" id="depth" step="any" style="width:80px">
+        <label>h vertex (in):</label>
+        <input type="number" id="hVertex" step="any" style="width:80px">
+        <label>Binning:</label>
+        <select id="binning"><option value="arcsec">Arc-seconds</option><option value="inches">Inches</option></select>
+    </div>
+    <div class="row">
+        <label>Targets/row:</label>
+        <input type="number" id="numTargets" value="44" min="1" max="100" style="width:60px">
+        <label>Rows:</label>
+        <input type="number" id="numRows" value="7" min="1" max="10" style="width:60px">
+        <label>Theo Ht (in):</label>
+        <input type="number" id="theoHeight" value="16.870" step="any" style="width:80px">
+    </div>
+    <div id="antennaNote" class="notes"></div>
+</div>
+
+<!-- Project Info -->
+<div class="card">
+    <h2>Project Info</h2>
+    <div class="row">
+        <label>Customer:</label><input type="text" id="customer" style="width:150px">
+        <label>Site:</label><input type="text" id="site" style="width:150px">
+        <label>S/N:</label><input type="text" id="serial" style="width:120px">
+        <label>Engineer:</label><input type="text" id="engineer" style="width:150px">
+    </div>
+</div>
+
+<!-- Ideal Angles -->
+<div class="card">
+    <h2>Ideal Angles per Row</h2>
+    <div id="idealAngles" class="ideal-row"></div>
+</div>
+
+<!-- K-Factor -->
+<div class="card">
+    <h2>K-Factor (RF / LF Readings)</h2>
+    <div style="overflow-x:auto"><table class="k-table" id="kTable"></table></div>
+    <div class="actions" style="margin-top:8px">
+        <button class="btn btn-orange btn-sm" onclick="calcKFactors()">Calculate K</button>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="card">
+    <div class="actions">
+        <button class="btn btn-teal btn-sm" onclick="fillIdealToTable()">Fill Ideal → Table</button>
+        <button class="btn btn-green" onclick="calculate()">CALCULATE RMS</button>
+        <button class="btn btn-purple btn-sm" onclick="saveProject()">Save Project</button>
+        <button class="btn btn-purple btn-sm" onclick="loadProject()">Load Project</button>
+        <button class="btn btn-gray btn-sm" onclick="showFormulas()">Formulas</button>
+    </div>
+</div>
+
+<!-- Measured Data Table -->
+<div class="card">
+    <h2>Measured Readings (° ' ")</h2>
+    <div class="table-wrap" id="tableWrap"></div>
+</div>
+
+<!-- Results -->
+<div class="card" id="resultsCard" style="display:none">
+    <h2>Results</h2>
+    <div class="results-box" id="resultsBox"></div>
+</div>
+
+</div>
+</div><!-- end app-content -->
+
+<!-- Formulas Modal -->
+<div id="formulaModal" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('visible')">
+<div class="modal">
+<button class="modal-close" onclick="document.getElementById('formulaModal').classList.remove('visible')">&times;</button>
+<h2>Formulas — RMS Calculator v2</h2>
+<pre id="formulaText"></pre>
+</div>
+</div>
+
+<script>
+
+// ═══════════════════════════════════════════════════════════
+// USER AUTHENTICATION
+// ═══════════════════════════════════════════════════════════
+const USERS = [
+    { user: 'Admin', pass: 'Cumbum@1984', role: 'admin', active: true },
+    { user: 'User1', pass: 'Bangalore@1984', role: 'user', active: true },
+];
+
+function doLogin() {
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    const found = USERS.find(x => x.user === u && x.pass === p);
+    if (!found) {
+        errEl.textContent = 'Invalid username or password.';
+        errEl.style.display = 'block';
+        return;
+    }
+    if (!found.active) {
+        errEl.textContent = 'Account disabled. Contact admin.';
+        errEl.style.display = 'block';
+        return;
+    }
+    sessionStorage.setItem('rms_auth', JSON.stringify({user: found.user, role: found.role}));
+    showApp();
+}
+
+function doLogout() {
+    sessionStorage.removeItem('rms_auth');
+    location.reload();
+}
+
+let appInitialized = false;
+
+function showApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    if (!appInitialized) { init(); appInitialized = true; }
+}
+
+// Check session on page load
+(function() {
+    const auth = sessionStorage.getItem('rms_auth');
+    if (auth) {
+        try {
+            const data = JSON.parse(auth);
+            const valid = USERS.find(x => x.user === data.user && x.active);
+            if (valid) { showApp(); return; }
+        } catch(e) {}
+    }
+    // No valid session — show login screen (already visible by default)
+})();
+
+// Allow Enter key to login
+document.getElementById('loginPass').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+});
+
+// ═══════════════════════════════════════════════════════════
+// ANTENNA DATABASE
+// ═══════════════════════════════════════════════════════════
+const ANTENNAS = {
+    'ViaSat 13.5m (534")': {
+        diameter: 534.0, depth: 84.98, hVertex: 13.160, theoHt: 16.870,
+        rows: 7, targets: 44, binning: 'arcsec',
+        ideal: {1:[95,2,8], 2:[87,32,32], 3:[86,49,38], 4:[82,40,44], 5:[80,46,53], 6:[79,6,58], 7:[76,7,50]},
+        notes: 'K-factor: RF/LF method. Binning in arc-seconds (5" bins).'
+    },
+    'ViaSat 9.1m': {
+        diameter: 358.0, depth: 57.0, hVertex: 13.14, theoHt: 16.850,
+        rows: 3, targets: 48, binning: 'inches',
+        ideal: {1:[87,50,20], 2:[86,47,48], 3:[78,29,24]},
+        notes: 'Binning in inches (0.005" bins). Alignment Kit #516212.'
+    },
+    'GD/Vertex 9.0m (0900CA)': {
+        diameter: 354.0, depth: 56.5, hVertex: 15.560, theoHt: 15.560,
+        rows: 5, targets: 32, binning: 'arcsec',
+        ideal: {1:[93,34,22], 2:[86,51,8], 3:[82,22,51], 4:[81,16,23], 5:[76,34,8]},
+        notes: '16 panels × 2 targets. Instrument: Wild T2 / Topcon E.'
+    },
+    'ASC Signal 7.6m': {
+        diameter: 300.0, depth: 47.0, hVertex: 18.50, theoHt: 18.50,
+        rows: 2, targets: 16, binning: 'arcsec',
+        ideal: {1:[88,55,23], 2:[101,23,28]},
+        notes: '16 ribs × 2 targets (Outboard EL1, Inboard EL2). Topcon height.'
+    },
+    'Custom Antenna': {
+        diameter: 0, depth: 0, hVertex: 0, theoHt: 0,
+        rows: 7, targets: 44, binning: 'arcsec',
+        ideal: {},
+        notes: 'Enter all parameters manually.'
+    }
+};
+
+let kFactors = {}; // {row: seconds}
+
+// ═══════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════
+function init() {
+    const sel = document.getElementById('antennaSelect');
+    for (const name of Object.keys(ANTENNAS)) {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
+    }
+    // Try auto-load last project
+    const saved = localStorage.getItem('rms_project');
+    if (saved) {
+        try { restoreProject(JSON.parse(saved)); return; } catch(e) {}
+    }
+    applyAntenna();
+}
+
+function onAntennaChange() {
+    const spec = ANTENNAS[document.getElementById('antennaSelect').value];
+    if (!spec) return;
+    document.getElementById('diameter').value = spec.diameter;
+    document.getElementById('depth').value = spec.depth;
+    document.getElementById('hVertex').value = spec.hVertex;
+    document.getElementById('theoHeight').value = spec.theoHt;
+    document.getElementById('binning').value = spec.binning;
+    document.getElementById('numTargets').value = spec.targets;
+    document.getElementById('numRows').value = spec.rows;
+    document.getElementById('antennaNote').textContent = spec.notes;
+}
+
+function applyAntenna() {
+    onAntennaChange();
+    generateTable();
+    fillIdealFromDB();
+}
+
+function fillIdealFromDB() {
+    const spec = ANTENNAS[document.getElementById('antennaSelect').value];
+    if (!spec || !spec.ideal) return;
+    for (const [r, dms] of Object.entries(spec.ideal)) {
+        const d = document.getElementById(`ideal_${r}_0`);
+        const m = document.getElementById(`ideal_${r}_1`);
+        const s = document.getElementById(`ideal_${r}_2`);
+        if (d) d.value = dms[0];
+        if (m) m.value = dms[1];
+        if (s) s.value = dms[2];
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// TABLE GENERATION
+// ═══════════════════════════════════════════════════════════
+function generateTable() {
+    const nTargets = parseInt(document.getElementById('numTargets').value);
+    const nRows = parseInt(document.getElementById('numRows').value);
+
+    // Ideal angles
+    let idealHtml = '';
+    for (let r = 1; r <= nRows; r++) {
+        idealHtml += `<div class="ideal-group"><label>R${r}:</label>
+            <input type="number" id="ideal_${r}_0" placeholder="°">
+            <input type="number" id="ideal_${r}_1" placeholder="'">
+            <input type="number" id="ideal_${r}_2" placeholder='"' step="any">
+            <span class="point" id="point_${r}"></span></div>`;
+    }
+    document.getElementById('idealAngles').innerHTML = idealHtml;
+
+    // K-factor table
+    let kHtml = '<tr><th>Row</th><th colspan="3">Right Face (° \' ")</th><th colspan="3">Left Face (° \' ")</th><th>K</th><th>Apply</th></tr>';
+    for (let r = 1; r <= nRows; r++) {
+        kHtml += `<tr><td>${r}</td>`;
+        for (let side of ['rf','lf']) {
+            for (let i = 0; i < 3; i++) {
+                kHtml += `<td><input type="number" id="k_${side}_${r}_${i}" step="any"></td>`;
+            }
+        }
+        kHtml += `<td class="k-val" id="kval_${r}">—</td>`;
+        kHtml += `<td><select id="ksign_${r}" style="font-size:11px"><option value="subtract">−</option><option value="add">+</option></select></td></tr>`;
+    }
+    document.getElementById('kTable').innerHTML = kHtml;
+
+    // Measured data table
+    let html = '<table><thead><tr><th class="tgt-col">Tgt</th>';
+    for (let r = 1; r <= nRows; r++) {
+        html += `<th colspan="3">Row ${r}</th>`;
+    }
+    html += '</tr><tr><th></th>';
+    for (let r = 1; r <= nRows; r++) {
+        html += '<th>°</th><th>\'</th><th>"</th>';
+    }
+    html += '</tr></thead><tbody>';
+    for (let t = 1; t <= nTargets; t++) {
+        html += `<tr><td class="tgt-col">${t}</td>`;
+        for (let r = 1; r <= nRows; r++) {
+            for (let i = 0; i < 3; i++) {
+                html += `<td><input type="number" id="m_${t}_${r}_${i}" step="any"></td>`;
+            }
+        }
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    document.getElementById('tableWrap').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function dmsToSec(d, m, s) { return d * 3600 + m * 60 + s; }
+
+function secToDms(sec) {
+    const d = Math.floor(sec / 3600);
+    const rem = sec - d * 3600;
+    const m = Math.floor(rem / 60);
+    const s = rem - m * 60;
+    return [d, m, s];
+}
+
+function getFocalLength() {
+    const D = parseFloat(document.getElementById('diameter').value) || 534;
+    const depth = parseFloat(document.getElementById('depth').value) || 84.98;
+    return depth > 0 ? (D * D) / (16 * depth) : 209.72;
+}
+
+function getHVertex() {
+    return parseFloat(document.getElementById('hVertex').value) || 13.16;
+}
+
+function getIdeal(r) {
+    const d = parseFloat(document.getElementById(`ideal_${r}_0`)?.value);
+    const m = parseFloat(document.getElementById(`ideal_${r}_1`)?.value);
+    const s = parseFloat(document.getElementById(`ideal_${r}_2`)?.value);
+    if (isNaN(d) || isNaN(m) || isNaN(s)) return null;
+    let sec = dmsToSec(d, m, s);
+    // Apply K-factor
+    if (kFactors[r] !== undefined) {
+        const sign = document.getElementById(`ksign_${r}`)?.value;
+        sec = sign === 'add' ? sec + kFactors[r] : sec - kFactors[r];
+    }
+    return sec;
+}
+
+function getMeasured(t, r) {
+    const d = parseFloat(document.getElementById(`m_${t}_${r}_0`)?.value);
+    const m = parseFloat(document.getElementById(`m_${t}_${r}_1`)?.value);
+    const s = parseFloat(document.getElementById(`m_${t}_${r}_2`)?.value);
+    if (isNaN(d) || isNaN(m) || isNaN(s)) return null;
+    return dmsToSec(d, m, s);
+}
+
+function getSlantDistance(r) {
+    const ideal = getIdeal(r);
+    if (ideal === null) return 150;
+    const F = getFocalLength();
+    const h = getHVertex();
+    const theta = (ideal / 3600) * Math.PI / 180;
+    const a = Math.sin(theta) ** 2 / (4 * F);
+    const b = -Math.cos(theta);
+    const c = -h;
+    const disc = b * b - 4 * a * c;
+    if (disc >= 0 && a !== 0) {
+        const slant = (-b + Math.sqrt(disc)) / (2 * a);
+        if (slant > 0) return slant;
+    }
+    return 150;
+}
+
+// ═══════════════════════════════════════════════════════════
+// K-FACTOR
+// ═══════════════════════════════════════════════════════════
+function calcKFactors() {
+    const nRows = parseInt(document.getElementById('numRows').value);
+    kFactors = {};
+    for (let r = 1; r <= nRows; r++) {
+        const rfD = parseFloat(document.getElementById(`k_rf_${r}_0`)?.value);
+        const rfM = parseFloat(document.getElementById(`k_rf_${r}_1`)?.value);
+        const rfS = parseFloat(document.getElementById(`k_rf_${r}_2`)?.value);
+        const lfD = parseFloat(document.getElementById(`k_lf_${r}_0`)?.value);
+        const lfM = parseFloat(document.getElementById(`k_lf_${r}_1`)?.value);
+        const lfS = parseFloat(document.getElementById(`k_lf_${r}_2`)?.value);
+        if ([rfD,rfM,rfS,lfD,lfM,lfS].some(isNaN)) continue;
+
+        const rfSec = dmsToSec(rfD, rfM, rfS);
+        const lfSec = dmsToSec(lfD, lfM, lfS);
+        let A, B;
+        if (rfSec / 3600 < 180) {
+            A = dmsToSec(90, 0, 0) - rfSec;
+            B = lfSec - dmsToSec(270, 0, 0);
+        } else {
+            A = rfSec - dmsToSec(270, 0, 0);
+            B = dmsToSec(90, 0, 0) - lfSec;
+        }
+        const K = (A - B) / 2;
+        kFactors[r] = K;
+
+        const kAbs = Math.abs(K);
+        const [kd, km, ks] = secToDms(kAbs);
+        const sign = K >= 0 ? '+' : '-';
+        document.getElementById(`kval_${r}`).textContent = `${sign}${kd}°${String(km).padStart(2,'0')}'${ks.toFixed(1)}"`;
+    }
+    updatePointingLabels();
+}
+
+function updatePointingLabels() {
+    const nRows = parseInt(document.getElementById('numRows').value);
+    for (let r = 1; r <= nRows; r++) {
+        const ideal = getIdeal(r);
+        const el = document.getElementById(`point_${r}`);
+        if (!el) continue;
+        if (ideal === null) { el.textContent = ''; continue; }
+        const [d, m, s] = secToDms(ideal);
+        el.textContent = `→ ${d}°${String(m).padStart(2,'0')}'${s.toFixed(1)}"`;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// FILL IDEAL TO TABLE
+// ═══════════════════════════════════════════════════════════
+function fillIdealToTable() {
+    const nTargets = parseInt(document.getElementById('numTargets').value);
+    const nRows = parseInt(document.getElementById('numRows').value);
+    let filled = 0;
+    for (let r = 1; r <= nRows; r++) {
+        const dVal = document.getElementById(`ideal_${r}_0`)?.value;
+        const mVal = document.getElementById(`ideal_${r}_1`)?.value;
+        const sVal = document.getElementById(`ideal_${r}_2`)?.value;
+        if (!dVal && !mVal && !sVal) continue;
+        for (let t = 1; t <= nTargets; t++) {
+            const vals = [dVal, mVal, sVal];
+            for (let i = 0; i < 3; i++) {
+                const el = document.getElementById(`m_${t}_${r}_${i}`);
+                if (el && vals[i]) { el.value = vals[i]; filled++; }
+            }
+        }
+    }
+    if (filled > 0) alert(`Filled ${filled} cells. Now edit the Seconds column where measured differs.`);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// RMS CALCULATION
+// ═══════════════════════════════════════════════════════════
+function calculate() {
+    const nTargets = parseInt(document.getElementById('numTargets').value);
+    const nRows = parseInt(document.getElementById('numRows').value);
+    const binMode = document.getElementById('binning').value;
+
+    let errors = [];
+    let errorsInches = [];
+
+    for (let r = 1; r <= nRows; r++) {
+        const ideal = getIdeal(r);
+        if (ideal === null) continue;
+        const rowDist = getSlantDistance(r);
+        for (let t = 1; t <= nTargets; t++) {
+            const measured = getMeasured(t, r);
+            if (measured === null) continue;
+            const errAS = Math.abs(measured - ideal);
+            errors.push(errAS);
+            errorsInches.push(rowDist * (errAS / 206265));
+        }
+    }
+
+    const box = document.getElementById('resultsBox');
+    const card = document.getElementById('resultsCard');
+
+    if (errors.length === 0) {
+        box.innerHTML = '<span class="warn">No data to calculate. Enter ideal angles and measured readings.</span>';
+        card.style.display = 'block';
+        return;
+    }
+
+    // Binning
+    let binSize, binValues, binUnit;
+    if (binMode === 'inches') {
+        binSize = 0.005; binValues = errorsInches; binUnit = 'in';
+    } else {
+        binSize = 5; binValues = errors; binUnit = '"';
+    }
+
+    let bins = {};
+    for (const e of binValues) {
+        const b = binMode === 'inches'
+            ? Math.round(Math.round(e / binSize) * binSize * 10000) / 10000
+            : Math.round(e / binSize) * binSize;
+        bins[b] = (bins[b] || 0) + 1;
+    }
+
+    let totalProduct = 0;
+    const totalCount = binValues.length;
+    const antenna = document.getElementById('antennaSelect').value;
+
+    let out = `<b>ANTENNA:</b> ${antenna}\n<b>Binning:</b> ${binMode === 'inches' ? 'Inches' : 'Arc-seconds'}\n\n`;
+    out += '<b>SUMMARY TABLE</b>\n';
+
+    if (binMode === 'inches') {
+        out += `${'Reading'.padStart(9)} × ${'Read'.padStart(9)} × ${'Count'.padStart(5)} = ${'Product'.padStart(12)}\n`;
+    } else {
+        out += `${'Reading'.padStart(7)} × ${'Read'.padStart(4)} × ${'Count'.padStart(5)} = ${'Product'.padStart(10)}\n`;
+    }
+    out += '─'.repeat(42) + '\n';
+
+    const sortedBins = Object.keys(bins).map(Number).sort((a,b) => a - b);
+    for (const b of sortedBins) {
+        const count = bins[b];
+        const product = b * b * count;
+        totalProduct += product;
+        if (binMode === 'inches') {
+            out += `  ${b.toFixed(4)} × ${b.toFixed(4)} × ${String(count).padStart(4)}  = ${product.toFixed(6)}\n`;
+        } else {
+            out += `  ${String(b).padStart(4)}${binUnit} × ${String(b).padStart(3)}${binUnit} × ${String(count).padStart(4)}  = ${String(product).padStart(8)}\n`;
+        }
+    }
+
+    out += '─'.repeat(42) + '\n';
+    const divided = totalProduct / totalCount;
+    const rmsBinned = Math.sqrt(divided);
+
+    if (binMode === 'inches') {
+        out += `  Total = ${totalProduct.toFixed(6)}\n`;
+        out += `  ÷ ${totalCount} = ${divided.toFixed(6)}\n`;
+        out += `  √ = ${rmsBinned.toFixed(4)}\n\n`;
+        out += `<span class="rms-big">  RMS = ${rmsBinned.toFixed(4)} inches</span>\n`;
+        out += `<span class="rms-big">  RMS = ${(rmsBinned*1000).toFixed(2)} mils</span>\n`;
+    } else {
+        out += `  Total = ${totalProduct}\n`;
+        out += `  ÷ ${totalCount} = ${divided.toFixed(4)}\n`;
+        out += `  √ = ${rmsBinned.toFixed(2)}\n\n`;
+        out += `<span class="rms-big">  RMS = ${rmsBinned.toFixed(2)} arc-sec</span>\n`;
+    }
+
+    // Show both units
+    if (binMode === 'arcsec' && errorsInches.length > 0) {
+        const rmsIn = Math.sqrt(errorsInches.reduce((s,e) => s + e*e, 0) / errorsInches.length);
+        out += `<span class="rms-big">  RMS = ${rmsIn.toFixed(4)} inches (${(rmsIn*1000).toFixed(2)} mils)</span>\n`;
+    } else if (binMode === 'inches') {
+        const rmsAS = Math.sqrt(errors.reduce((s,e) => s + e*e, 0) / errors.length);
+        out += `<span class="rms-big">  RMS = ${rmsAS.toFixed(2)} arc-sec</span>\n`;
+    }
+
+    // Exact RMS
+    const exactAS = Math.sqrt(errors.reduce((s,e) => s + e*e, 0) / totalCount);
+    const exactIn = Math.sqrt(errorsInches.reduce((s,e) => s + e*e, 0) / totalCount);
+    out += `\n  (Exact RMS = ${exactAS.toFixed(2)} arc-sec)\n`;
+    out += `  (Exact RMS = ${exactIn.toFixed(4)} inches)\n`;
+
+    // Stats
+    out += '\n' + '─'.repeat(42) + '\n';
+    out += '<b>STATISTICS</b>\n';
+    out += `  Targets measured: ${totalCount}\n`;
+    out += `  Max error: ${Math.max(...errors).toFixed(1)} arc-sec\n`;
+    out += `  Min error: ${Math.min(...errors).toFixed(1)} arc-sec\n`;
+    out += `  Mean error: ${(errors.reduce((a,b)=>a+b,0)/errors.length).toFixed(1)} arc-sec\n`;
+    out += `<span class="info">  Focal length: ${getFocalLength().toFixed(2)}"</span>\n`;
+    out += `<span class="info">  h above vertex: ${getHVertex().toFixed(3)}"</span>\n`;
+
+    // Exceeding threshold
+    const threshold = 0.01;
+    out += '\n' + '─'.repeat(42) + '\n';
+    out += `<b>TARGETS > ${threshold}"</b>\n`;
+    let exceed = [];
+    for (let r = 1; r <= nRows; r++) {
+        const ideal = getIdeal(r);
+        if (ideal === null) continue;
+        const rowDist = getSlantDistance(r);
+        for (let t = 1; t <= nTargets; t++) {
+            const measured = getMeasured(t, r);
+            if (measured === null) continue;
+            const errAS = Math.abs(measured - ideal);
+            const errIn = rowDist * (errAS / 206265);
+            if (errIn > threshold) exceed.push({t, r, errAS, errIn});
+        }
+    }
+    if (exceed.length > 0) {
+        exceed.sort((a,b) => b.errIn - a.errIn);
+        out += `  ${'Tgt'.padStart(4)} ${'Row'.padStart(4)} ${'Error"'.padStart(8)} ${'Inches'.padStart(8)}\n`;
+        out += '  ' + '─'.repeat(30) + '\n';
+        for (const {t, r, errAS, errIn} of exceed) {
+            out += `<span class="warn">  ${String(t).padStart(4)}  R${r}   ${errAS.toFixed(1).padStart(6)}"  ${errIn.toFixed(4)}"</span>\n`;
+        }
+        out += `\n  Total exceeding: ${exceed.length} / ${totalCount}\n`;
+    } else {
+        out += '  None — all targets within spec ✓\n';
+    }
+
+    // Project info
+    out += '\n' + '─'.repeat(42) + '\n';
+    const cust = document.getElementById('customer').value;
+    const site = document.getElementById('site').value;
+    const sn = document.getElementById('serial').value;
+    const eng = document.getElementById('engineer').value;
+    if (cust) out += `  Customer: ${cust}\n`;
+    if (site) out += `  Site: ${site}\n`;
+    if (sn) out += `  Antenna S/N: ${sn}\n`;
+    if (eng) out += `  Engineer: ${eng}\n`;
+    out += `  Date: ${new Date().toLocaleDateString('en-GB')}\n`;
+
+    box.innerHTML = out;
+    card.style.display = 'block';
+    card.scrollIntoView({behavior: 'smooth'});
+}
+
+// ═══════════════════════════════════════════════════════════
+// SAVE / LOAD PROJECT (localStorage)
+// ═══════════════════════════════════════════════════════════
+function saveProject() {
+    const data = gatherProject();
+    localStorage.setItem('rms_project', JSON.stringify(data));
+    // Also offer download
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `RMS_${data.customer || 'Project'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert('Project saved to browser & downloaded as JSON.');
+}
+
+function loadProject() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                restoreProject(data);
+                localStorage.setItem('rms_project', JSON.stringify(data));
+                alert('Project loaded.');
+            } catch(err) { alert('Error loading file: ' + err.message); }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+function gatherProject() {
+    const nTargets = parseInt(document.getElementById('numTargets').value);
+    const nRows = parseInt(document.getElementById('numRows').value);
+    const data = {
+        version: '2.0',
+        antenna: document.getElementById('antennaSelect').value,
+        diameter: document.getElementById('diameter').value,
+        depth: document.getElementById('depth').value,
+        hVertex: document.getElementById('hVertex').value,
+        binning: document.getElementById('binning').value,
+        numTargets: nTargets, numRows: nRows,
+        theoHeight: document.getElementById('theoHeight').value,
+        customer: document.getElementById('customer').value,
+        site: document.getElementById('site').value,
+        serial: document.getElementById('serial').value,
+        engineer: document.getElementById('engineer').value,
+        ideal: {}, kRf: {}, kLf: {}, kSigns: {}, measured: {}
+    };
+    for (let r = 1; r <= nRows; r++) {
+        for (let i = 0; i < 3; i++) {
+            const v = document.getElementById(`ideal_${r}_${i}`)?.value;
+            if (v) data.ideal[`${r}_${i}`] = v;
+            const rf = document.getElementById(`k_rf_${r}_${i}`)?.value;
+            if (rf) data.kRf[`${r}_${i}`] = rf;
+            const lf = document.getElementById(`k_lf_${r}_${i}`)?.value;
+            if (lf) data.kLf[`${r}_${i}`] = lf;
+        }
+        const sign = document.getElementById(`ksign_${r}`)?.value;
+        if (sign) data.kSigns[r] = sign;
+    }
+    for (let t = 1; t <= nTargets; t++) {
+        for (let r = 1; r <= nRows; r++) {
+            for (let i = 0; i < 3; i++) {
+                const v = document.getElementById(`m_${t}_${r}_${i}`)?.value;
+                if (v) data.measured[`${t}_${r}_${i}`] = v;
+            }
+        }
+    }
+    return data;
+}
+
+function restoreProject(data) {
+    document.getElementById('antennaSelect').value = data.antenna || 'ViaSat 13.5m (534")';
+    document.getElementById('diameter').value = data.diameter || '';
+    document.getElementById('depth').value = data.depth || '';
+    document.getElementById('hVertex').value = data.hVertex || '';
+    document.getElementById('binning').value = data.binning || 'arcsec';
+    document.getElementById('numTargets').value = data.numTargets || 44;
+    document.getElementById('numRows').value = data.numRows || 7;
+    document.getElementById('theoHeight').value = data.theoHeight || '16.870';
+    document.getElementById('customer').value = data.customer || '';
+    document.getElementById('site').value = data.site || '';
+    document.getElementById('serial').value = data.serial || '';
+    document.getElementById('engineer').value = data.engineer || '';
+
+    generateTable();
+
+    // Restore ideal
+    for (const [key, val] of Object.entries(data.ideal || {})) {
+        const el = document.getElementById(`ideal_${key.replace('_','_')}`);
+        if (el) el.value = val;
+    }
+    // Restore K
+    for (const [key, val] of Object.entries(data.kRf || {})) {
+        const el = document.getElementById(`k_rf_${key.replace('_','_')}`);
+        if (el) el.value = val;
+    }
+    for (const [key, val] of Object.entries(data.kLf || {})) {
+        const el = document.getElementById(`k_lf_${key.replace('_','_')}`);
+        if (el) el.value = val;
+    }
+    for (const [key, val] of Object.entries(data.kSigns || {})) {
+        const el = document.getElementById(`ksign_${key}`);
+        if (el) el.value = val;
+    }
+    // Restore measured
+    for (const [key, val] of Object.entries(data.measured || {})) {
+        const el = document.getElementById(`m_${key.replace(/_/g,'_')}`);
+        if (el) el.value = val;
+    }
+    // Recalc K if data exists
+    if (Object.keys(data.kRf || {}).length > 0) calcKFactors();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FORMULAS
+// ═══════════════════════════════════════════════════════════
+function showFormulas() {
+    document.getElementById('formulaText').textContent = `
+RMS SURFACE ACCURACY CALCULATOR — FORMULAS
+═══════════════════════════════════════════
+
+1. ERROR CALCULATION
+   Error (arc-sec) = |Measured angle − Ideal angle|
+   (both in arc-seconds: deg×3600 + min×60 + sec)
+
+2. K-FACTOR (Theodolite Collimation Correction)
+   A = 90°00'00" − Right Face  (or RF − 270° for scenario 3/4)
+   B = Left Face − 270°00'00"  (or 90° − LF for scenario 3/4)
+   K = (A − B) / 2
+   Pointing angle = Ideal − K  (scenarios 1,2)
+                  = Ideal + K  (scenarios 3,4)
+
+3. BINNED RMS (Standard Method)
+   Bin errors to nearest 5" (or 0.005" for inch method)
+   RMS = √( Σ(bin_value² × count) / total_targets )
+
+4. SLANT DISTANCE (Parabola Geometry)
+   Line-of-sight at angle θ intersects parabola:
+   a×s² + b×s + c = 0
+   where:
+     a = sin²(θ) / (4F)
+     b = −cos(θ)
+     c = −h
+   Solution: s = (cos(θ) + √(cos²(θ) + 4ah)) / (2a)
+
+   F = D² / (16 × depth)    [focal length]
+   h = theodolite height above vertex
+
+5. INCHES CONVERSION
+   Error (inches) = slant_distance × (error_arcsec / 206265)
+   206265 = arc-seconds per radian
+
+6. ANTENNA DATABASE
+   ViaSat 13.5m: D=534", depth=84.98", F=209.72", h=13.160"
+   ViaSat 9.1m:  D=358", depth=57.0", F=~112", h=13.14"
+   GD/Vertex 9m: D=354", depth=56.5", F=~110", h=15.56"
+   ASC 7.6m:     D=300", depth=47.0", F=~95", h=18.50"
+`;
+    document.getElementById('formulaModal').classList.add('visible');
+}
+
+// Auto-save on page unload
+window.addEventListener('beforeunload', () => {
+    try { localStorage.setItem('rms_project', JSON.stringify(gatherProject())); } catch(e) {}
+});
+
+// Service worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// Start — init() is called from showApp() after login
+</script>
+</body>
+</html>
