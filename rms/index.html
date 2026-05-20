@@ -855,9 +855,16 @@ window.addEventListener('beforeunload', () => {
     try { localStorage.setItem('rms_project', JSON.stringify(gatherProject())); } catch(e) {}
 });
 
-// Service worker
+// Service worker disabled to prevent caching issues
+// if ('serviceWorker' in navigator) {
+//     navigator.serviceWorker.register('sw.js').catch(() => {});
+// }
+
+// Unregister any existing service worker
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) { registration.unregister(); }
+    });
 }
 
 // Start — init() is called from showApp() after login
