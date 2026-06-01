@@ -26,8 +26,8 @@ const ParabolixAuth = (function() {
             deviceId: null  // Admin not device-locked
         },
         {
-            user: 'User1',
-            pass: 'Bangalore@1984',
+            user: 'Demo',
+            pass: 'Demo@123',
             role: 'user',
             active: true,
             apps: ['resolver', 'rms', 'pattern', 'kingpost', 'simulsat'],
