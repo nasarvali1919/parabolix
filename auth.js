@@ -46,7 +46,7 @@ const ParabolixAuth = (function() {
             pass: 'Guest@2026',
             role: 'guest',
             active: true,
-            apps: [],  // No app access — can only view the dashboard
+            apps:  ['resolver', 'rms', 'pattern', 'kingpost', 'simulsat'],  // No app access — can only view the dashboard
             deviceId: null
         },
         // Add more users as needed:
