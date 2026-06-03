@@ -169,9 +169,27 @@ function loadFile(e, cut) {
         const reader = new FileReader();
         reader.onload = function(ev) {
             const wb = XLSX.read(ev.target.result, {type:'array'});
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-            parseExcel(data, cut);
+            // Try each sheet until we find one with numeric data
+            let parsed = false;
+            for(const sheetName of wb.SheetNames){
+                const ws = wb.Sheets[sheetName];
+                const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+                // Check if this sheet has at least some numeric data
+                let hasNumeric = false;
+                for(let i=0;i<Math.min(data.length,50);i++){
+                    const row=data[i]; if(!row) continue;
+                    for(let c=0;c<row.length;c++){
+                        if(isNumeric(row[c])){hasNumeric=true;break;}
+                    }
+                    if(hasNumeric) break;
+                }
+                if(hasNumeric){
+                    parseExcel(data, cut);
+                    parsed = true;
+                    break;
+                }
+            }
+            if(!parsed) alert('No numeric data found in any sheet.');
         };
         reader.readAsArrayBuffer(file);
     }
@@ -217,6 +235,81 @@ function parseCSV(text, cut) {
 
 function parseExcel(data, cut) {
     let headerIdx=-1, dataStart=-1;
+
+    // E4403B/Agilent spectrum analyser format detection:
+    // Data may start in column B (index 1) with Time(s) and Trace(dBm)
+    // Metadata may be interspersed in columns C/D alongside data
+
+    // First, try to find the header row with "Time" or "Trace" or "dBm"
+    let timeCol=-1, traceCol=-1;
+    for (let i=0;i<Math.min(data.length,20);i++) {
+        const row=data[i]; if(!row||!row.length) continue;
+        for(let c=0;c<row.length;c++){
+            const v=String(row[c]||'').trim().toLowerCase();
+            if(v.includes('time')&&(v.includes('s')||v.includes('sec'))) timeCol=c;
+            if(v.includes('trace')||v.includes('dbm')) traceCol=c;
+        }
+        if(timeCol>=0&&traceCol>=0){headerIdx=i;break;}
+    }
+
+    // If we found Time/Trace columns (spectrum analyser format)
+    if(timeCol>=0&&traceCol>=0){
+        const numRows=[];
+        for(let i=headerIdx+1;i<data.length;i++){
+            const row=data[i]; if(!row||!row.length) continue;
+            const t=row[timeCol], v=row[traceCol];
+            if(isNumeric(t)&&isNumeric(v)){
+                numRows.push([parseFloat(t),parseFloat(v)]);
+            }
+        }
+        if(numRows.length>0){
+            fileData[cut]={columns:['Time (s)','Trace (dBm)'],rows:numRows};
+            populateYSelect(cut,fileData[cut].columns);
+            document.getElementById(cut+'Status').textContent=numRows.length+' pts | Agilent/Keysight E4403B format detected';
+            return;
+        }
+    }
+
+    // Second attempt: scan ALL rows for any two adjacent numeric columns
+    // This handles cases where column A is empty and data is in columns B+C
+    for (let i=0;i<data.length;i++) {
+        const row=data[i]; if(!row||!row.length) continue;
+        for(let c=0;c<row.length-1;c++){
+            if(isNumeric(row[c])&&isNumeric(row[c+1])){
+                // Found start of numeric data — collect all consecutive rows
+                const numRows=[];
+                for(let j=i;j<data.length;j++){
+                    const r=data[j]; if(!r) continue;
+                    if(isNumeric(r[c])&&isNumeric(r[c+1])){
+                        const vals=[];
+                        for(let k=c;k<r.length;k++){
+                            if(isNumeric(r[k])) vals.push(parseFloat(r[k]));
+                            else break;
+                        }
+                        if(vals.length>=2) numRows.push(vals);
+                    } else if(numRows.length>10) break; // stop after gap if we have enough data
+                }
+                if(numRows.length>=5){
+                    const nCols=numRows[0].length;
+                    let headers=[];
+                    // Try to get headers from row above
+                    if(i>0&&data[i-1]){
+                        for(let k=c;k<c+nCols&&k<data[i-1].length;k++){
+                            const h=data[i-1][k];
+                            headers.push((h!=null&&String(h).trim()&&String(h).trim()!=='undefined')?String(h).trim():'Col_'+(headers.length+1));
+                        }
+                    }
+                    while(headers.length<nCols) headers.push('Col_'+(headers.length+1));
+                    fileData[cut]={columns:headers,rows:numRows};
+                    populateYSelect(cut,fileData[cut].columns);
+                    document.getElementById(cut+'Status').textContent=numRows.length+' pts | '+fileData[cut].columns.join(', ');
+                    return;
+                }
+            }
+        }
+    }
+
+    // Fallback: original logic — first row where row[0] is numeric
     for (let i=0;i<data.length;i++) {
         const row=data[i]; if(!row||!row.length) continue;
         if (isNumeric(row[0])) { dataStart=i; break; }
