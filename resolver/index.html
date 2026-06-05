@@ -6,7 +6,10 @@
     <meta name="theme-color" content="#1565C0">
     <meta name="description" content="Resolver Pin Alignment Calculator for satellite antenna field work">
     <title>Resolver Alignment</title>
-    <script src="../auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="../auth-firebase.js"></script>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
     <style>
@@ -530,18 +533,12 @@
             const u = document.getElementById('loginUser').value.trim();
             const p = document.getElementById('loginPass').value;
             const errEl = document.getElementById('loginError');
-            const result = ParabolixAuth.login(u, p);
-            if (!result.success) {
-                errEl.textContent = result.error;
-                errEl.style.display = 'block';
-                return;
-            }
-            if (!ParabolixAuth.canAccessApp('resolver')) {
-                errEl.textContent = 'You do not have access to this tool.';
-                errEl.style.display = 'block';
-                return;
-            }
-            showApp();
+            firebase.auth().signInWithEmailAndPassword(u, p).then(() => {
+                setTimeout(() => {
+                    if (ParabolixAuth.canAccessApp('resolver')) { showApp(); }
+                    else { errEl.textContent = 'No access. Subscribe at parabolix.in/v2/'; errEl.style.display = 'block'; }
+                }, 1000);
+            }).catch(err => { errEl.textContent = err.message; errEl.style.display = 'block'; });
         }
 
         function doLogout() {
@@ -554,12 +551,14 @@
             document.getElementById('appContent').style.display = 'block';
         }
 
-        // Auto-login if session exists or trusted device
+        // Auto-login if session exists
         (function() {
-            const session = ParabolixAuth.getSession();
-            if (session && ParabolixAuth.canAccessApp('resolver')) {
-                showApp();
-                return;
+            ParabolixAuth.onReady(function() {
+                const session = ParabolixAuth.getSession();
+                if (session && ParabolixAuth.canAccessApp('resolver')) {
+                    showApp();
+                }
+            });
             }
         })();
 

@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#37474F">
 <title>Kingpost Leveling Guide</title>
-<script src="../auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="../auth-firebase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#ECEFF1;color:#333;font-size:14px;min-height:100vh}
@@ -851,11 +854,14 @@ function doLogin() {
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
     const errEl = document.getElementById('loginError');
-    const result = ParabolixAuth.login(u, p);
-    if (!result.success) { errEl.textContent = result.error; errEl.style.display = 'block'; return; }
-    if (!ParabolixAuth.canAccessApp('kingpost')) { errEl.textContent = 'You do not have access to this tool.'; errEl.style.display = 'block'; return; }
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appContent').style.display = 'block';
+    firebase.auth().signInWithEmailAndPassword(u, p).then(() => {
+        setTimeout(() => {
+            if (ParabolixAuth.canAccessApp('kingpost')) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+            } else { errEl.textContent = 'No access. Subscribe at parabolix.in/v2/'; errEl.style.display = 'block'; }
+        }, 1000);
+    }).catch(err => { errEl.textContent = err.message; errEl.style.display = 'block'; });
 }
 
 function doLogout() {
@@ -864,11 +870,13 @@ function doLogout() {
 }
 
 (function() {
-    const session = ParabolixAuth.getSession();
-    if (session && ParabolixAuth.canAccessApp('kingpost')) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appContent').style.display = 'block';
-    }
+    ParabolixAuth.onReady(function() {
+        const session = ParabolixAuth.getSession();
+        if (session && ParabolixAuth.canAccessApp('kingpost')) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+        }
+    });
 })();
 </script>
 </div><!-- end appContent -->

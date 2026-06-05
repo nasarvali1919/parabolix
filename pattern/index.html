@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1565C0">
 <title>Pattern Analyser</title>
-<script src="../auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="../auth-firebase.js"></script>
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -202,11 +205,17 @@ function doLogin() {
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
     const errEl = document.getElementById('loginError');
-    const result = ParabolixAuth.login(u, p);
-    if (!result.success) { errEl.textContent = result.error; errEl.style.display = 'block'; return; }
-    if (!ParabolixAuth.canAccessApp('pattern')) { errEl.textContent = 'You do not have access to this tool.'; errEl.style.display = 'block'; return; }
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appContent').style.display = 'block';
+    firebase.auth().signInWithEmailAndPassword(u, p).then(() => {
+        setTimeout(() => {
+            if (ParabolixAuth.canAccessApp('pattern')) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+            } else {
+                errEl.textContent = 'No access. Subscribe at parabolix.in/v2/';
+                errEl.style.display = 'block';
+            }
+        }, 1000);
+    }).catch(err => { errEl.textContent = err.message; errEl.style.display = 'block'; });
 }
 
 function doLogout() {
@@ -215,11 +224,13 @@ function doLogout() {
 }
 
 (function() {
-    const session = ParabolixAuth.getSession();
-    if (session && ParabolixAuth.canAccessApp('pattern')) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appContent').style.display = 'block';
-        return;
+    ParabolixAuth.onReady(function() {
+        const session = ParabolixAuth.getSession();
+        if (session && ParabolixAuth.canAccessApp('pattern')) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+        }
+    });
     }
 })();
 </script>

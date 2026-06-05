@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1565C0">
     <title>RMS Surface Calculator v2</title>
-    <script src="../auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="../auth-firebase.js"></script>
     <link rel="manifest" href="manifest.json">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,7 +88,7 @@
     <div class="login-box">
         <h2>📐 RMS Surface Calculator</h2>
         <p>Enter credentials to continue</p>
-        <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+        <input type="text" id="loginUser" placeholder="Email" autocomplete="username">
         <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
         <button onclick="doLogin()">LOGIN</button>
         <p class="login-error" id="loginError"></p>
@@ -200,18 +203,22 @@ function doLogin() {
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
     const errEl = document.getElementById('loginError');
-    const result = ParabolixAuth.login(u, p);
-    if (!result.success) {
-        errEl.textContent = result.error;
+
+    // Try Firebase email auth first
+    firebase.auth().signInWithEmailAndPassword(u, p).then(() => {
+        // onAuthStateChanged in auth-firebase.js will update session
+        setTimeout(() => {
+            if (ParabolixAuth.canAccessApp('rms')) {
+                showApp();
+            } else {
+                errEl.textContent = 'You do not have access to this tool. Subscribe at parabolix.in/v2/';
+                errEl.style.display = 'block';
+            }
+        }, 1000);
+    }).catch(err => {
+        errEl.textContent = err.message;
         errEl.style.display = 'block';
-        return;
-    }
-    if (!ParabolixAuth.canAccessApp('rms')) {
-        errEl.textContent = 'You do not have access to this tool.';
-        errEl.style.display = 'block';
-        return;
-    }
-    showApp();
+    });
 }
 
 function doLogout() {
@@ -235,16 +242,20 @@ function showApp() {
 (function() {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
+            ParabolixAuth.onReady(function() {
+                const session = ParabolixAuth.getSession();
+                if (session && ParabolixAuth.canAccessApp('rms')) {
+                    showApp();
+                }
+            });
+        });
+    } else {
+        ParabolixAuth.onReady(function() {
             const session = ParabolixAuth.getSession();
             if (session && ParabolixAuth.canAccessApp('rms')) {
                 showApp();
             }
         });
-    } else {
-        const session = ParabolixAuth.getSession();
-        if (session && ParabolixAuth.canAccessApp('rms')) {
-            showApp();
-        }
     }
 })();
 

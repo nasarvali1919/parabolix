@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0D47A1">
 <title>Simulsat Roll Angle Calculator</title>
-<script src="../auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="../auth-firebase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#E3F2FD;color:#333;font-size:14px;min-height:100vh}
@@ -491,10 +494,12 @@ function doLogin() {
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
     const errEl = document.getElementById('loginError');
-    const result = ParabolixAuth.login(u, p);
-    if (!result.success) { errEl.textContent = result.error; errEl.style.display = 'block'; return; }
-    if (!ParabolixAuth.canAccessApp('simulsat')) { errEl.textContent = 'You do not have access to this tool.'; errEl.style.display = 'block'; return; }
-    showApp();
+    firebase.auth().signInWithEmailAndPassword(u, p).then(() => {
+        setTimeout(() => {
+            if (ParabolixAuth.canAccessApp('simulsat')) { showApp(); }
+            else { errEl.textContent = 'No access. Subscribe at parabolix.in/v2/'; errEl.style.display = 'block'; }
+        }, 1000);
+    }).catch(err => { errEl.textContent = err.message; errEl.style.display = 'block'; });
 }
 
 function doLogout() { ParabolixAuth.logout(); location.reload(); }
@@ -506,8 +511,10 @@ function showApp() {
 }
 
 (function() {
-    const session = ParabolixAuth.getSession();
-    if (session && ParabolixAuth.canAccessApp('simulsat')) { showApp(); }
+    ParabolixAuth.onReady(function() {
+        const session = ParabolixAuth.getSession();
+        if (session && ParabolixAuth.canAccessApp('simulsat')) { showApp(); }
+    });
 })();
 
 document.getElementById('loginPass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
