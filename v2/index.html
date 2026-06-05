@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0D47A1">
+<title>Parabolix v2 — Subscription Platform</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a1628;color:#fff;min-height:100vh;font-size:14px}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:linear-gradient(135deg,#0D47A1,#1A237E)}
+.login-box{background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:36px 28px;max-width:400px;width:100%;text-align:center}
+.login-box h1{font-size:26px;font-weight:700;margin-bottom:4px}
+.login-box .tagline{color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:20px}
+.login-box input{width:100%;padding:12px 14px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;font-size:14px;margin-bottom:10px;background:rgba(255,255,255,0.05);color:#fff}
+.login-box input::placeholder{color:rgba(255,255,255,0.4)}
+.login-box input:focus{outline:none;border-color:#FFD700}
+.login-box .btn-login{width:100%;padding:13px;background:linear-gradient(135deg,#FFD700,#FFA000);color:#1A237E;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+.login-box .btn-link{background:none;border:none;color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;margin-top:10px;text-decoration:underline}
+.login-error{color:#FF5252;font-size:12px;margin-top:8px;display:none}
+.app{display:none}
+.header{background:linear-gradient(135deg,#0D47A1,#1A237E);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px}
+.header-right{display:flex;align-items:center;gap:8px}
+.role-badge{background:rgba(255,215,0,0.2);color:#FFD700;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.trial-badge{background:rgba(76,175,80,0.2);color:#4CAF50;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.logout-btn{background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:10px;cursor:pointer}
+.container{max-width:800px;margin:0 auto;padding:14px}
+.card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:12px}
+.card h2{font-size:12px;color:#90CAF9;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.row label{font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;min-width:100px}
+input[type="text"],input[type="email"],input[type="password"],input[type="number"],select{padding:9px 11px;border:1.5px solid rgba(255,255,255,0.2);border-radius:8px;font-size:13px;background:rgba(255,255,255,0.05);color:#fff}
+input:focus,select:focus{outline:none;border-color:#FFD700}
+.btn{padding:9px 14px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+.btn:active{opacity:.7}
+.btn-primary{background:#1565C0;color:#fff}
+.btn-gold{background:linear-gradient(135deg,#FFD700,#FFA000);color:#1A237E}
+.btn-green{background:#2E7D32;color:#fff}
+.btn-red{background:#D32F2F;color:#fff}
+.btn-sm{padding:6px 10px;font-size:11px}
+.btn-full{width:100%;padding:12px;font-size:14px}
+.tabs{display:flex;gap:3px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.tab{padding:8px 12px;border:1.5px solid rgba(255,255,255,0.15);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:rgba(255,255,255,0.6);white-space:nowrap}
+.tab.active{border-color:#FFD700;background:rgba(255,215,0,0.1);color:#FFD700}
+.tc{display:none}.tc.active{display:block}
+.item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px}
+.item:last-child{border-bottom:none}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600}
+.b-active{background:rgba(76,175,80,0.2);color:#4CAF50}
+.b-trial{background:rgba(255,152,0,0.2);color:#FF9800}
+.b-expired{background:rgba(244,67,54,0.2);color:#F44336}
+.b-admin{background:rgba(255,215,0,0.2);color:#FFD700}
+.msg{padding:8px;border-radius:6px;margin:6px 0;font-size:11px}
+.msg-ok{background:rgba(76,175,80,0.15);color:#4CAF50}
+.msg-err{background:rgba(244,67,54,0.15);color:#F44336}
+.note{font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;font-style:italic}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:12px 0}
+.tool-card{background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:transform .2s,border-color .2s}
+.tool-card:hover{transform:translateY(-3px);border-color:rgba(255,215,0,0.4)}
+.tool-card.locked{opacity:0.4;cursor:not-allowed}
+.tool-card.locked:hover{transform:none;border-color:rgba(255,255,255,0.1)}
+.tool-icon{font-size:32px;margin-bottom:8px}
+.tool-card h3{font-size:13px;margin-bottom:4px}
+.tool-card p{font-size:10px;color:rgba(255,255,255,0.5)}
+.tool-card .price{font-size:11px;color:#FFD700;font-weight:600;margin-top:8px}
+.tool-card .status{margin-top:6px}
+.tbl{width:100%;font-size:11px;border-collapse:collapse}
+.tbl th{background:rgba(21,101,192,0.3);color:#90CAF9;padding:6px;font-size:10px}
+.tbl td{padding:5px;border:1px solid rgba(255,255,255,0.05);text-align:center;color:rgba(255,255,255,0.8)}
+.referral-box{background:linear-gradient(135deg,rgba(156,39,176,0.1),rgba(103,58,183,0.1));border:1px solid rgba(156,39,176,0.3);border-radius:10px;padding:14px;margin:10px 0}
+.referral-box h3{color:#CE93D8;font-size:12px;margin-bottom:6px}
+.referral-link{background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:6px;font-family:monospace;font-size:11px;color:#FFD700;word-break:break-all}
+</style>
+</head>
+<body>
+
+<!-- LOGIN / REGISTER -->
+<div id="loginScreen" class="login-screen">
+<div class="login-box">
+<h1>Parabolix</h1>
+<p class="tagline">Satellite Antenna Engineering Tools</p>
+<input type="email" id="loginEmail" placeholder="Email">
+<input type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+<button class="btn-login" onclick="doLogin()">LOGIN</button>
+<button class="btn-link" onclick="toggleReg()">New? Register for 7-day free trial</button>
+<div id="regFields" style="display:none;margin-top:12px">
+<input type="text" id="regName" placeholder="Full Name">
+<input type="email" id="regEmail" placeholder="Email">
+<input type="text" id="regPhone" placeholder="Phone (optional)">
+<input type="password" id="regPass" placeholder="Password (min 6)">
+<input type="text" id="regReferral" placeholder="Referral code (optional)">
+<button class="btn-login" style="background:#4CAF50;color:#fff" onclick="doRegister()">REGISTER — Start 7-Day Trial</button>
+</div>
+<p class="login-error" id="loginError"></p>
+</div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app">
+<div class="header">
+<h1>Parabolix</h1>
+<div class="header-right">
+<span id="userInfo" style="font-size:10px;opacity:.7"></span>
+<span class="role-badge" id="roleBadge" style="display:none"></span>
+<span class="trial-badge" id="trialBadge" style="display:none"></span>
+<button class="logout-btn" onclick="doLogout()">Logout</button>
+</div>
+</div>
+<div class="container" id="mainContainer">
+<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.5)">Loading...</div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// FIREBASE INIT
+// ═══════════════════════════════════════════════════════════
+firebase.initializeApp({
+    apiKey:"AIzaSyBUb2AtYgcIJrAC_dTyW6-6_RQ59wrewlc",
+    authDomain:"parabolix-b82e4.firebaseapp.com",
+    projectId:"parabolix-b82e4",
+    storageBucket:"parabolix-b82e4.firebasestorage.app",
+    messagingSenderId:"1009247065497",
+    appId:"1:1009247065497:web:004830da36ac0b4c286f08"
+});
+const auth=firebase.auth();
+const db=firebase.firestore();
+let CU=null,UR='user',UD={};
+
+// Tool definitions
+const TOOLS={
+    resolver:{name:'Resolver Alignment',icon:'🔧',desc:'Pin alignment from dial indicators',url:'../resolver/index.html'},
+    rms:{name:'RMS Surface Calculator',icon:'📐',desc:'Reflector surface accuracy',url:'../rms/index.html'},
+    pattern:{name:'Pattern Analyser',icon:'📡',desc:'Radiation pattern & ITU envelope',url:'../pattern/index.html'},
+    kingpost:{name:'Kingpost Leveling',icon:'⚖️',desc:'Pedestal verticality alignment',url:'../kingpost/index.html'},
+    simulsat:{name:'Simulsat Roll Angle',icon:'🛰️',desc:'Torus antenna calculations',url:'../simulsat/index.html'}
+};
+
+// ═══════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════
+function doLogin(){
+    const e=document.getElementById('loginEmail').value.trim();
+    const p=document.getElementById('loginPass').value;
+    const err=document.getElementById('loginError');
+    err.style.display='none';
+    auth.signInWithEmailAndPassword(e,p).catch(x=>{err.textContent=x.message;err.style.display='block';});
+}
+
+function doRegister(){
+    const name=document.getElementById('regName').value.trim();
+    const email=document.getElementById('regEmail').value.trim();
+    const phone=document.getElementById('regPhone').value.trim();
+    const pass=document.getElementById('regPass').value;
+    const referral=document.getElementById('regReferral').value.trim();
+    const err=document.getElementById('loginError');
+    if(!name||!email){err.textContent='Name and email required.';err.style.display='block';return;}
+    err.style.display='none';
+    auth.createUserWithEmailAndPassword(email,pass).then(c=>{
+        const trialEnd=new Date();
+        trialEnd.setDate(trialEnd.getDate()+7);
+        return db.collection('users').doc(c.user.uid).set({
+            name,email,phone,role:'user',
+            trialStart:new Date().toISOString(),
+            trialEnd:trialEnd.toISOString(),
+            referredBy:referral||null,
+            referralCode:c.user.uid.substring(0,8),
+            subscriptions:{},
+            createdAt:new Date()
+        });
+    }).then(()=>{
+        // If referred, record the referral
+        if(referral){
+            db.collection('referrals').add({
+                referrerCode:referral,
+                newUserEmail:email,
+                newUserName:name,
+                status:'registered',
+                commission:0,
+                createdAt:new Date().toISOString()
+            });
+        }
+    }).catch(x=>{err.textContent=x.message;err.style.display='block';});
+}
+
+function doLogout(){auth.signOut();}
+function toggleReg(){const el=document.getElementById('regFields');el.style.display=el.style.display==='none'?'block':'none';}
+
+auth.onAuthStateChanged(async u=>{
+    if(u){
+        CU=u;
+        const doc=await db.collection('users').doc(u.uid).get();
+        if(doc.exists){UD=doc.data();UR=UD.role||'user';}
+        else{UD={name:u.email,role:'user'};UR='user';}
+        document.getElementById('loginScreen').style.display='none';
+        document.getElementById('app').style.display='block';
+        document.getElementById('userInfo').textContent=UD.name;
+        if(UR==='admin'){document.getElementById('roleBadge').textContent='ADMIN';document.getElementById('roleBadge').style.display='';}
+        else if(isInTrial()){document.getElementById('trialBadge').textContent='TRIAL ('+daysLeftTrial()+' days)';document.getElementById('trialBadge').style.display='';}
+        renderDashboard();
+    }else{
+        CU=null;UR='user';UD={};
+        document.getElementById('loginScreen').style.display='flex';
+        document.getElementById('app').style.display='none';
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+// SUBSCRIPTION HELPERS
+// ═══════════════════════════════════════════════════════════
+function isInTrial(){
+    if(!UD.trialEnd) return false;
+    return new Date()<new Date(UD.trialEnd);
+}
+function daysLeftTrial(){
+    if(!UD.trialEnd) return 0;
+    const d=Math.ceil((new Date(UD.trialEnd)-new Date())/(1000*60*60*24));
+    return Math.max(0,d);
+}
+function hasToolAccess(toolId){
+    if(UR==='admin') return true;
+    if(isInTrial()) return true;
+    const subs=UD.subscriptions||{};
+    const sub=subs[toolId];
+    if(!sub) return false;
+    return sub.active && new Date()<new Date(sub.expiresAt);
+}
+function getToolStatus(toolId){
+    if(UR==='admin') return {status:'admin',label:'Admin Access'};
+    if(isInTrial()) return {status:'trial',label:'Trial ('+daysLeftTrial()+'d left)'};
+    const subs=UD.subscriptions||{};
+    const sub=subs[toolId];
+    if(!sub||!sub.active) return {status:'locked',label:'Subscribe'};
+    const daysLeft=Math.ceil((new Date(sub.expiresAt)-new Date())/(1000*60*60*24));
+    if(daysLeft<=0) return {status:'expired',label:'Expired'};
+    return {status:'active',label:daysLeft+'d remaining'};
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════
+function renderDashboard(){
+    if(UR==='admin') renderAdmin();
+    else renderUser();
+}
+
+// ═══════════════════════════════════════════════════════════
+// USER VIEW
+// ═══════════════════════════════════════════════════════════
+async function renderUser(){
+    const mc=document.getElementById('mainContainer');
+    mc.innerHTML=`<div class="tabs">
+        <div class="tab active" onclick="uTab(this,'u-tools')">Tools</div>
+        <div class="tab" onclick="uTab(this,'u-subs')">My Subscriptions</div>
+        <div class="tab" onclick="uTab(this,'u-refer')">Referrals</div>
+    </div>
+    <div id="u-tools" class="tc active"></div>
+    <div id="u-subs" class="tc"></div>
+    <div id="u-refer" class="tc"></div>`;
+    loadUserTools();
+}
+function uTab(el,id){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(id).classList.add('active');
+    if(id==='u-tools')loadUserTools();
+    if(id==='u-subs')loadUserSubs();
+    if(id==='u-refer')loadUserReferrals();
+}
+
+async function loadUserTools(){
+    // Get pricing from Firestore
+    const pricingDoc=await db.collection('settings').doc('pricing').get();
+    const pricing=pricingDoc.exists?pricingDoc.data():{};
+
+    let html='<div class="card"><h2>Your Tools</h2>';
+    if(isInTrial()){
+        html+=`<div class="msg msg-ok">🎉 Free trial active! ${daysLeftTrial()} days remaining — all tools unlocked.</div>`;
+    }
+    html+=`<div class="tools-grid">`;
+    for(const[id,tool] of Object.entries(TOOLS)){
+        const access=hasToolAccess(id);
+        const st=getToolStatus(id);
+        const price=pricing[id]||{monthly:499,yearly:4999};
+        const locked=!access?'locked':'';
+        const badgeClass=st.status==='active'?'b-active':st.status==='trial'?'b-trial':st.status==='admin'?'b-admin':'b-expired';
+        html+=`<div class="tool-card ${locked}" onclick="${access?"openTool('"+id+"')":"showSubscribe('"+id+"')"}">
+            <div class="tool-icon">${tool.icon}</div>
+            <h3>${tool.name}</h3>
+            <p>${tool.desc}</p>
+            <div class="price">₹${price.monthly}/mo | ₹${price.yearly}/yr</div>
+            <div class="status"><span class="badge ${badgeClass}">${st.label}</span></div>
+        </div>`;
+    }
+    html+=`</div></div>`;
+    document.getElementById('u-tools').innerHTML=html;
+}
+
+function openTool(toolId){
+    const tool=TOOLS[toolId];
+    if(!tool) return;
+    if(!hasToolAccess(toolId)){showSubscribe(toolId);return;}
+    window.location.href=tool.url;
+}
+
+async function showSubscribe(toolId){
+    const tool=TOOLS[toolId];
+    const pricingDoc=await db.collection('settings').doc('pricing').get();
+    const pricing=pricingDoc.exists?pricingDoc.data():{};
+    const price=pricing[toolId]||{monthly:499,yearly:4999};
+    const adminDoc=await db.collection('settings').doc('payment').get();
+    const payInfo=adminDoc.exists?adminDoc.data():{upiId:'',qrUrl:''};
+
+    const mc=document.getElementById('mainContainer');
+    mc.innerHTML=`<button class="btn btn-sm" onclick="renderDashboard()" style="margin-bottom:10px;background:rgba(255,255,255,0.1);color:#fff">&larr; Back</button>
+    <div class="card"><h2>Subscribe: ${tool.icon} ${tool.name}</h2>
+    <p style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:12px">${tool.desc}</p>
+    <div class="row"><label>Plan:</label><select id="subPlan" onchange="updateSubTotal()" style="min-width:150px">
+        <option value="monthly">Monthly — ₹${price.monthly}</option>
+        <option value="yearly">Yearly — ₹${price.yearly} (save ${Math.round((1-price.yearly/(price.monthly*12))*100)}%)</option>
+    </select></div>
+    <div class="row"><label>Amount:</label><span id="subTotal" style="font-size:16px;font-weight:700;color:#FFD700">₹${price.monthly}</span></div>`;
+
+    // Payment info
+    if(payInfo.upiId){
+        mc.innerHTML+=`<div style="margin:12px 0;text-align:center">
+        ${payInfo.qrUrl?'<img src="'+payInfo.qrUrl+'" style="max-width:160px;border-radius:8px;margin-bottom:8px" alt="QR">':''}
+        <p style="font-size:12px"><b>UPI ID:</b> <span style="color:#FFD700">${payInfo.upiId}</span></p>
+        <a href="upi://pay?pa=${payInfo.upiId}&pn=Parabolix&am=${price.monthly}&cu=INR&tn=${encodeURIComponent(tool.name+' subscription')}" class="btn btn-gold btn-full" style="display:block;margin-top:8px;text-decoration:none;text-align:center" id="upiPayLink">💳 Pay via UPI</a>
+        </div>`;
+    }
+
+    mc.innerHTML+=`<p class="note" style="margin:10px 0">After payment, upload screenshot below. Admin will activate within 24hrs.</p>
+    <div style="border:2px dashed rgba(255,255,255,0.2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;margin:10px 0" onclick="document.getElementById('proofFile').click()">
+        <p style="font-size:24px">📷</p><p style="font-size:11px;color:rgba(255,255,255,0.5)">Upload payment screenshot</p>
+        <input type="file" id="proofFile" accept="image/*" style="display:none" onchange="submitSubscription('${toolId}')">
+    </div>
+    <div id="subMsg"></div></div>`;
+
+    // Store price for later
+    window._subPrice=price;
+}
+
+function updateSubTotal(){
+    const plan=document.getElementById('subPlan').value;
+    const price=window._subPrice||{monthly:499,yearly:4999};
+    document.getElementById('subTotal').textContent='₹'+(plan==='yearly'?price.yearly:price.monthly);
+    // Update UPI link amount
+    const link=document.getElementById('upiPayLink');
+    if(link){
+        const amt=plan==='yearly'?price.yearly:price.monthly;
+        link.href=link.href.replace(/am=\d+/,'am='+amt);
+    }
+}
+
+async function submitSubscription(toolId){
+    const file=document.getElementById('proofFile').files[0];
+    if(!file){return;}
+    const plan=document.getElementById('subPlan').value;
+    const price=window._subPrice||{monthly:499,yearly:4999};
+    const amount=plan==='yearly'?price.yearly:price.monthly;
+    const msgEl=document.getElementById('subMsg');
+    msgEl.innerHTML='<div class="msg" style="background:rgba(33,150,243,0.15);color:#64B5F6">⏳ Uploading proof...</div>';
+
+    try{
+        const fileName=`subscriptions/${CU.uid}/${toolId}_${Date.now()}.${file.name.split('.').pop()}`;
+        const ref=firebase.storage().ref(fileName);
+        await ref.put(file);
+        const proofUrl=await ref.getDownloadURL();
+
+        await db.collection('subscriptionRequests').add({
+            userId:CU.uid,
+            userName:UD.name,
+            userEmail:CU.email,
+            toolId,
+            toolName:TOOLS[toolId].name,
+            plan,
+            amount,
+            proofUrl,
+            referredBy:UD.referredBy||null,
+            status:'pending',
+            submittedAt:new Date().toISOString(),
+            reviewedAt:null
+        });
+
+        msgEl.innerHTML='<div class="msg msg-ok">✅ Payment proof submitted! Admin will activate within 24 hours.</div>';
+    }catch(err){
+        msgEl.innerHTML=`<div class="msg msg-err">❌ Upload failed: ${err.message}</div>`;
+    }
+}
+
+async function loadUserSubs(){
+    const subs=UD.subscriptions||{};
+    let html='<div class="card"><h2>My Subscriptions</h2>';
+    const keys=Object.keys(subs);
+    if(keys.length===0){
+        html+='<p class="note">No active subscriptions. Subscribe to tools from the Tools tab.</p>';
+    }
+    keys.forEach(toolId=>{
+        const sub=subs[toolId];
+        const tool=TOOLS[toolId]||{name:toolId,icon:'🔧'};
+        const daysLeft=Math.ceil((new Date(sub.expiresAt)-new Date())/(1000*60*60*24));
+        const isActive=sub.active&&daysLeft>0;
+        const badge=isActive?'<span class="badge b-active">Active ('+daysLeft+'d)</span>':'<span class="badge b-expired">Expired</span>';
+        html+=`<div class="item"><div>${tool.icon} <b>${tool.name}</b> ${badge}<br><span style="font-size:10px;color:rgba(255,255,255,0.5)">Plan: ${sub.plan} | Expires: ${new Date(sub.expiresAt).toLocaleDateString('en-IN')}</span></div></div>`;
+    });
+
+    // Pending requests
+    const reqSnap=await db.collection('subscriptionRequests').where('userId','==',CU.uid).where('status','==','pending').get();
+    if(!reqSnap.empty){
+        html+='<h3 style="font-size:11px;color:#FF9800;margin-top:12px">⏳ Pending Approval:</h3>';
+        reqSnap.forEach(doc=>{
+            const r=doc.data();
+            html+=`<div class="item"><div>${TOOLS[r.toolId]?.icon||'🔧'} <b>${r.toolName}</b> — ${r.plan} (₹${r.amount})<br><span style="font-size:10px;color:rgba(255,255,255,0.5)">Submitted: ${new Date(r.submittedAt).toLocaleDateString('en-IN')}</span></div><div><span class="badge b-trial">Pending</span></div></div>`;
+        });
+    }
+    html+='</div>';
+    document.getElementById('u-subs').innerHTML=html;
+}
+
+async function loadUserReferrals(){
+    const code=UD.referralCode||CU.uid.substring(0,8);
+    const referralLink=window.location.href.split('?')[0]+'?ref='+code;
+
+    let html=`<div class="referral-box"><h3>🎁 Your Referral Program</h3>
+    <p style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:8px">Share your code. Earn 10% commission on every subscription from referred users.</p>
+    <p style="font-size:11px;margin-bottom:4px"><b>Your Code:</b> <span style="color:#FFD700;font-weight:700">${code}</span></p>
+    <p style="font-size:11px;margin-bottom:8px"><b>Share Link:</b></p>
+    <div class="referral-link">${referralLink}</div>
+    <button class="btn btn-sm" style="margin-top:8px;background:rgba(255,255,255,0.1);color:#fff" onclick="navigator.clipboard.writeText('${referralLink}');this.textContent='Copied!'">📋 Copy Link</button>
+    </div>`;
+
+    // My referrals
+    const refSnap=await db.collection('referrals').where('referrerCode','==',code).get();
+    html+=`<div class="card"><h2>My Referrals</h2>`;
+    if(refSnap.empty){html+=`<p class="note">No referrals yet. Share your code to earn commissions!</p>`;}
+    else{
+        let totalComm=0;
+        html+=`<table class="tbl"><tr><th>User</th><th>Status</th><th>Commission</th></tr>`;
+        refSnap.forEach(doc=>{
+            const r=doc.data();
+            totalComm+=r.commission||0;
+            html+=`<tr><td>${r.newUserName}</td><td>${r.status}</td><td>₹${(r.commission||0).toLocaleString('en-IN')}</td></tr>`;
+        });
+        html+=`</table><p style="font-size:12px;margin-top:8px;color:#FFD700"><b>Total Earned: ₹${totalComm.toLocaleString('en-IN')}</b></p>`;
+    }
+    html+=`</div>`;
+    document.getElementById('u-refer').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN VIEW
+// ═══════════════════════════════════════════════════════════
+async function renderAdmin(){
+    const mc=document.getElementById('mainContainer');
+    mc.innerHTML=`<div class="tabs">
+        <div class="tab active" onclick="adTab(this,'ad-tools')">Tools</div>
+        <div class="tab" onclick="adTab(this,'ad-users')">Users</div>
+        <div class="tab" onclick="adTab(this,'ad-approve')">Approvals</div>
+        <div class="tab" onclick="adTab(this,'ad-subs')">Subscriptions</div>
+        <div class="tab" onclick="adTab(this,'ad-pricing')">Pricing</div>
+        <div class="tab" onclick="adTab(this,'ad-referrals')">Referrals</div>
+        <div class="tab" onclick="adTab(this,'ad-payment')">Payment Setup</div>
+    </div>
+    <div id="ad-tools" class="tc active"></div>
+    <div id="ad-users" class="tc"></div>
+    <div id="ad-approve" class="tc"></div>
+    <div id="ad-subs" class="tc"></div>
+    <div id="ad-pricing" class="tc"></div>
+    <div id="ad-referrals" class="tc"></div>
+    <div id="ad-payment" class="tc"></div>`;
+    loadUserTools(); // Admin also sees tools
+    document.getElementById('ad-tools').innerHTML=document.getElementById('u-tools')?.innerHTML||'';
+    loadUserTools();
+}
+function adTab(el,id){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(id).classList.add('active');
+    if(id==='ad-tools')loadAdminTools();
+    if(id==='ad-users')loadAdminUsers();
+    if(id==='ad-approve')loadAdminApprovals();
+    if(id==='ad-subs')loadAdminSubs();
+    if(id==='ad-pricing')loadAdminPricing();
+    if(id==='ad-referrals')loadAdminReferrals();
+    if(id==='ad-payment')loadAdminPayment();
+}
+
+async function loadAdminTools(){
+    let html='<div class="card"><h2>All Tools (Admin Access)</h2><div class="tools-grid">';
+    for(const[id,tool] of Object.entries(TOOLS)){
+        html+=`<div class="tool-card" onclick="openTool('${id}')"><div class="tool-icon">${tool.icon}</div><h3>${tool.name}</h3><p>${tool.desc}</p><div class="status"><span class="badge b-admin">Admin</span></div></div>`;
+    }
+    html+=`</div></div>`;
+    document.getElementById('ad-tools').innerHTML=html;
+}
+
+async function loadAdminUsers(){
+    const snap=await db.collection('users').get();
+    let html='<div class="card"><h2>All Users</h2>';
+    snap.forEach(doc=>{
+        const u=doc.data();
+        const isTrialActive=u.trialEnd&&new Date()<new Date(u.trialEnd);
+        const badge=u.role==='admin'?'<span class="badge b-admin">Admin</span>':isTrialActive?'<span class="badge b-trial">Trial</span>':'<span class="badge b-expired">User</span>';
+        html+=`<div class="item"><div><b>${u.name}</b> ${badge}<br><span style="font-size:10px;color:rgba(255,255,255,0.5)">${u.email} | Joined: ${new Date(u.createdAt?.toDate?.()??u.createdAt).toLocaleDateString('en-IN')}</span></div>
+        <div><select style="font-size:10px;padding:2px;background:rgba(0,0,0,0.3);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px" onchange="changeUserRole('${doc.id}',this.value)"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></div></div>`;
+    });
+    html+='</div>';
+    document.getElementById('ad-users').innerHTML=html;
+}
+
+async function changeUserRole(uid,role){await db.collection('users').doc(uid).update({role});loadAdminUsers();}
+
+async function loadAdminApprovals(){
+    const snap=await db.collection('subscriptionRequests').where('status','==','pending').get();
+    let html='<div class="card"><h2>Pending Subscription Approvals</h2>';
+    if(snap.empty){html+='<p class="note">No pending approvals.</p>';}
+    snap.forEach(doc=>{
+        const r=doc.data();
+        const proofLink=r.proofUrl?`<a href="${r.proofUrl}" target="_blank" style="color:#64B5F6;font-size:10px">View Proof</a>`:'No proof';
+        html+=`<div class="item"><div><b>${r.userName}</b> — ${r.toolName}<br><span style="font-size:10px;color:rgba(255,255,255,0.5)">${r.plan} | ₹${r.amount} | ${new Date(r.submittedAt).toLocaleDateString('en-IN')}</span><br>${proofLink}</div>
+        <div><button class="btn btn-green btn-sm" onclick="approveSubscription('${doc.id}')">Approve</button> <button class="btn btn-red btn-sm" onclick="rejectSubscription('${doc.id}')">Reject</button></div></div>`;
+    });
+    html+='</div>';
+    document.getElementById('ad-approve').innerHTML=html;
+}
+
+async function approveSubscription(reqId){
+    const reqDoc=await db.collection('subscriptionRequests').doc(reqId).get();
+    const r=reqDoc.data();
+    const expiresAt=new Date();
+    if(r.plan==='yearly') expiresAt.setFullYear(expiresAt.getFullYear()+1);
+    else expiresAt.setMonth(expiresAt.getMonth()+1);
+
+    // Update user's subscription
+    const userRef=db.collection('users').doc(r.userId);
+    await userRef.update({
+        [`subscriptions.${r.toolId}`]:{
+            active:true,
+            plan:r.plan,
+            amount:r.amount,
+            activatedAt:new Date().toISOString(),
+            expiresAt:expiresAt.toISOString()
+        }
+    });
+
+    // Mark request as approved
+    await db.collection('subscriptionRequests').doc(reqId).update({status:'approved',reviewedAt:new Date().toISOString()});
+
+    // Handle referral commission (10%)
+    if(r.referredBy){
+        const commission=Math.round(r.amount*0.1);
+        const refSnap=await db.collection('referrals').where('referrerCode','==',r.referredBy).where('newUserEmail','==',r.userEmail).get();
+        if(!refSnap.empty){
+            const refDoc=refSnap.docs[0];
+            const existing=refDoc.data().commission||0;
+            await refDoc.ref.update({commission:existing+commission,status:'earned'});
+        }
+    }
+
+    alert('Subscription approved for '+r.userName+' — '+r.toolName);
+    loadAdminApprovals();
+}
+
+async function rejectSubscription(reqId){
+    if(!confirm('Reject this subscription request?')) return;
+    await db.collection('subscriptionRequests').doc(reqId).update({status:'rejected',reviewedAt:new Date().toISOString()});
+    loadAdminApprovals();
+}
+
+async function loadAdminSubs(){
+    const snap=await db.collection('users').get();
+    let html='<div class="card"><h2>All Active Subscriptions</h2><table class="tbl"><tr><th>User</th><th>Tool</th><th>Plan</th><th>Expires</th><th>Action</th></tr>';
+    snap.forEach(doc=>{
+        const u=doc.data();
+        const subs=u.subscriptions||{};
+        for(const[toolId,sub] of Object.entries(subs)){
+            if(!sub.active) continue;
+            const daysLeft=Math.ceil((new Date(sub.expiresAt)-new Date())/(1000*60*60*24));
+            const badge=daysLeft>0?'<span class="badge b-active">'+daysLeft+'d</span>':'<span class="badge b-expired">Expired</span>';
+            html+=`<tr><td>${u.name}</td><td>${TOOLS[toolId]?.name||toolId}</td><td>${sub.plan}</td><td>${badge}</td><td><button class="btn btn-red btn-sm" onclick="cancelSubscription('${doc.id}','${toolId}')">Cancel</button></td></tr>`;
+        }
+    });
+    html+='</table></div>';
+    document.getElementById('ad-subs').innerHTML=html;
+}
+
+async function cancelSubscription(userId,toolId){
+    if(!confirm('Cancel this subscription?')) return;
+    await db.collection('users').doc(userId).update({[`subscriptions.${toolId}.active`]:false});
+    alert('Subscription cancelled.');
+    loadAdminSubs();
+}
+
+async function loadAdminPricing(){
+    const doc=await db.collection('settings').doc('pricing').get();
+    const pricing=doc.exists?doc.data():{};
+    let html='<div class="card"><h2>Tool Pricing (₹)</h2>';
+    for(const[id,tool] of Object.entries(TOOLS)){
+        const p=pricing[id]||{monthly:499,yearly:4999};
+        html+=`<div class="item"><div>${tool.icon} <b>${tool.name}</b></div><div>
+        <input type="number" id="price_${id}_m" value="${p.monthly}" style="width:70px" placeholder="Monthly"> /mo
+        <input type="number" id="price_${id}_y" value="${p.yearly}" style="width:70px;margin-left:8px" placeholder="Yearly"> /yr
+        </div></div>`;
+    }
+    html+=`<button class="btn btn-gold btn-full" onclick="savePricing()" style="margin-top:12px">Save All Pricing</button><div id="pricingMsg"></div></div>`;
+    document.getElementById('ad-pricing').innerHTML=html;
+}
+
+async function savePricing(){
+    const pricing={};
+    for(const id of Object.keys(TOOLS)){
+        pricing[id]={
+            monthly:parseInt(document.getElementById('price_'+id+'_m').value)||499,
+            yearly:parseInt(document.getElementById('price_'+id+'_y').value)||4999
+        };
+    }
+    await db.collection('settings').doc('pricing').set(pricing);
+    document.getElementById('pricingMsg').innerHTML='<div class="msg msg-ok">✅ Pricing saved!</div>';
+}
+
+async function loadAdminReferrals(){
+    const snap=await db.collection('referrals').get();
+    let html='<div class="card"><h2>All Referrals</h2>';
+    if(snap.empty){html+='<p class="note">No referrals yet.</p>';}
+    else{
+        html+='<table class="tbl"><tr><th>Referrer Code</th><th>New User</th><th>Status</th><th>Commission</th></tr>';
+        snap.forEach(doc=>{
+            const r=doc.data();
+            html+=`<tr><td>${r.referrerCode}</td><td>${r.newUserName}</td><td>${r.status}</td><td>₹${(r.commission||0)}</td></tr>`;
+        });
+        html+='</table>';
+    }
+    html+='</div>';
+    document.getElementById('ad-referrals').innerHTML=html;
+}
+
+async function loadAdminPayment(){
+    const doc=await db.collection('settings').doc('payment').get();
+    const pay=doc.exists?doc.data():{upiId:'',qrUrl:''};
+    let html=`<div class="card"><h2>Payment Configuration</h2>
+    <div class="row"><label>UPI ID:</label><input type="text" id="payUpi" value="${pay.upiId||''}" placeholder="yourname@upi" style="width:200px"></div>
+    <div class="row"><label>QR Image URL:</label><input type="text" id="payQr" value="${pay.qrUrl||''}" placeholder="https://..." style="width:300px"></div>
+    <div class="row"><label>Referral %:</label><input type="number" id="payRefPct" value="${pay.referralPct||10}" min="0" max="50" style="width:60px">%</div>
+    <button class="btn btn-gold btn-full" onclick="savePayment()" style="margin-top:12px">Save Payment Settings</button>
+    <div id="payMsg"></div></div>`;
+    document.getElementById('ad-payment').innerHTML=html;
+}
+
+async function savePayment(){
+    await db.collection('settings').doc('payment').set({
+        upiId:document.getElementById('payUpi').value.trim(),
+        qrUrl:document.getElementById('payQr').value.trim(),
+        referralPct:parseInt(document.getElementById('payRefPct').value)||10
+    });
+    document.getElementById('payMsg').innerHTML='<div class="msg msg-ok">✅ Payment settings saved!</div>';
+}
+
+// Check referral code from URL
+(function(){
+    const params=new URLSearchParams(window.location.search);
+    const ref=params.get('ref');
+    if(ref){
+        setTimeout(()=>{
+            const el=document.getElementById('regReferral');
+            if(el) el.value=ref;
+            toggleReg();
+        },500);
+    }
+})();
+</script>
+</body>
+</html>
