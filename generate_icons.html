@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Parabolix Icons</title></head>
+<body style="background:#222;color:#fff;font-family:sans-serif;padding:40px;text-align:center">
+<h2>Parabolix Icon Generator</h2>
+<p>Right-click each image → "Save image as" → save to your parabolix repo folder</p>
+<div style="margin:30px">
+<h3>icon-192.png</h3>
+<canvas id="c192" width="192" height="192"></canvas>
+</div>
+<div style="margin:30px">
+<h3>icon-512.png</h3>
+<canvas id="c512" width="512" height="512"></canvas>
+</div>
+<script>
+function drawIcon(canvas){
+    const s=canvas.width;
+    const ctx=canvas.getContext('2d');
+    // Background
+    const grad=ctx.createLinearGradient(0,0,s,s);
+    grad.addColorStop(0,'#0D47A1');
+    grad.addColorStop(1,'#1A237E');
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.roundRect(0,0,s,s,s*0.15);
+    ctx.fill();
+
+    // Parabola dish
+    ctx.strokeStyle='#FFFFFF';
+    ctx.lineWidth=s*0.025;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    for(let i=-1;i<=1;i+=0.02){
+        const x=s/2+i*s*0.35;
+        const y=s*0.7-(1-i*i)*s*0.35;
+        if(i===-1)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // Feed/focus point
+    ctx.fillStyle='#FFD700';
+    ctx.beginPath();
+    ctx.arc(s/2,s*0.38,s*0.04,0,Math.PI*2);
+    ctx.fill();
+
+    // Signal waves from feed
+    ctx.strokeStyle='rgba(255,215,0,0.5)';
+    ctx.lineWidth=s*0.012;
+    for(let r=1;r<=3;r++){
+        ctx.beginPath();
+        ctx.arc(s/2,s*0.38,s*0.04+r*s*0.05,Math.PI*1.2,Math.PI*1.8);
+        ctx.stroke();
+    }
+
+    // Satellite icon top-right
+    ctx.fillStyle='rgba(255,255,255,0.8)';
+    ctx.font=`${s*0.12}px sans-serif`;
+    ctx.fillText('🛰️',s*0.7,s*0.22);
+
+    // Text "Px"
+    ctx.fillStyle='#FFFFFF';
+    ctx.font=`bold ${s*0.14}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText('Px',s/2,s*0.92);
+}
+drawIcon(document.getElementById('c192'));
+drawIcon(document.getElementById('c512'));
+
+// Convert to downloadable images
+document.getElementById('c192').toBlob(function(blob){
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(blob);
+    img.style.border='2px solid #FFD700';
+    img.style.borderRadius='20px';
+    document.getElementById('c192').parentNode.appendChild(img);
+},'image/png');
+document.getElementById('c512').toBlob(function(blob){
+    const img=document.createElement('img');
+    img.src=URL.createObjectURL(blob);
+    img.style.border='2px solid #FFD700';
+    img.style.borderRadius='20px';
+    img.style.maxWidth='256px';
+    document.getElementById('c512').parentNode.appendChild(img);
+},'image/png');
+</script>
+</body>
+</html>
