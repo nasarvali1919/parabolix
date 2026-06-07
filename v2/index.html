@@ -475,9 +475,7 @@ async function renderAdmin(){
     <div id="ad-pricing" class="tc"></div>
     <div id="ad-referrals" class="tc"></div>
     <div id="ad-payment" class="tc"></div>`;
-    loadUserTools(); // Admin also sees tools
-    document.getElementById('ad-tools').innerHTML=document.getElementById('u-tools')?.innerHTML||'';
-    loadUserTools();
+    loadAdminTools();
 }
 function adTab(el,id){
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
