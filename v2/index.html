@@ -502,19 +502,68 @@ async function loadAdminTools(){
 
 async function loadAdminUsers(){
     const snap=await db.collection('users').get();
-    let html='<div class="card"><h2>All Users</h2>';
+    let html='<div class="card"><h2>All Users ('+snap.size+')</h2>';
+    html+=`<p style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:10px">Manage user access, approve registrations, suspend or delete accounts.</p>`;
     snap.forEach(doc=>{
         const u=doc.data();
         const isTrialActive=u.trialEnd&&new Date()<new Date(u.trialEnd);
-        const badge=u.role==='admin'?'<span class="badge b-admin">Admin</span>':isTrialActive?'<span class="badge b-trial">Trial</span>':'<span class="badge b-expired">User</span>';
-        html+=`<div class="item"><div><b>${u.name}</b> ${badge}<br><span style="font-size:10px;color:rgba(255,255,255,0.5)">${u.email} | Joined: ${new Date(u.createdAt?.toDate?.()??u.createdAt).toLocaleDateString('en-IN')}</span></div>
-        <div><select style="font-size:10px;padding:2px;background:rgba(0,0,0,0.3);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px" onchange="changeUserRole('${doc.id}',this.value)"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></div></div>`;
+        const isSuspended=u.suspended===true;
+        const trialDays=isTrialActive?Math.ceil((new Date(u.trialEnd)-new Date())/(1000*60*60*24)):0;
+        let badge='';
+        if(u.role==='admin') badge='<span class="badge b-admin">Admin</span>';
+        else if(isSuspended) badge='<span class="badge b-expired">Suspended</span>';
+        else if(isTrialActive) badge='<span class="badge b-trial">Trial ('+trialDays+'d)</span>';
+        else badge='<span class="badge b-expired">Expired</span>';
+
+        const suspendBtn=isSuspended
+            ?`<button class="btn btn-green btn-sm" onclick="activateUser('${doc.id}')">Activate</button>`
+            :`<button class="btn btn-sm" style="background:#FF9800;color:#fff" onclick="suspendUser('${doc.id}')">Suspend</button>`;
+
+        html+=`<div class="item" style="${isSuspended?'opacity:0.5':''}"><div><b>${u.name}</b> ${badge}<br><span style="font-size:10px;color:rgba(255,255,255,0.5)">${u.email} | ${u.phone||'—'}</span><br><span style="font-size:10px;color:rgba(255,255,255,0.4)">Joined: ${new Date(u.createdAt?.toDate?.()??u.createdAt).toLocaleDateString('en-IN')} | Trial ends: ${u.trialEnd?new Date(u.trialEnd).toLocaleDateString('en-IN'):'N/A'}</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        <select style="font-size:10px;padding:2px;background:rgba(0,0,0,0.3);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:4px" onchange="changeUserRole('${doc.id}',this.value)"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select>
+        <div style="display:flex;gap:4px">${suspendBtn}<button class="btn btn-red btn-sm" onclick="deleteUserAccount('${doc.id}','${u.name}')">Delete</button></div>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#90CAF9;font-size:9px" onclick="extendTrial('${doc.id}')">+7 days trial</button>
+        </div></div>`;
     });
     html+='</div>';
     document.getElementById('ad-users').innerHTML=html;
 }
 
 async function changeUserRole(uid,role){await db.collection('users').doc(uid).update({role});loadAdminUsers();}
+
+async function suspendUser(uid){
+    if(!confirm('Suspend this user? They will lose all access immediately.')) return;
+    await db.collection('users').doc(uid).update({suspended:true});
+    loadAdminUsers();
+}
+
+async function activateUser(uid){
+    await db.collection('users').doc(uid).update({suspended:false});
+    loadAdminUsers();
+}
+
+async function deleteUserAccount(uid,name){
+    if(!confirm('DELETE user "'+name+'"? This removes their Firestore data. They can still log in via Firebase Auth but will have no access.')) return;
+    if(!confirm('FINAL WARNING: Are you sure?')) return;
+    await db.collection('users').doc(uid).delete();
+    // Also delete their subscription requests
+    const reqSnap=await db.collection('subscriptionRequests').where('userId','==',uid).get();
+    reqSnap.forEach(doc=>doc.ref.delete());
+    alert(name+' deleted.');
+    loadAdminUsers();
+}
+
+async function extendTrial(uid){
+    const userDoc=await db.collection('users').doc(uid).get();
+    const u=userDoc.data();
+    const currentEnd=u.trialEnd?new Date(u.trialEnd):new Date();
+    const newEnd=new Date(Math.max(currentEnd.getTime(),Date.now()));
+    newEnd.setDate(newEnd.getDate()+7);
+    await db.collection('users').doc(uid).update({trialEnd:newEnd.toISOString(),suspended:false});
+    alert('Trial extended to '+newEnd.toLocaleDateString('en-IN'));
+    loadAdminUsers();
+}
 
 async function loadAdminApprovals(){
     const snap=await db.collection('subscriptionRequests').where('status','==','pending').get();

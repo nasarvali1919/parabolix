@@ -90,6 +90,7 @@ const ParabolixAuth = (function() {
 
     function getAllowedApps(userData) {
         if (!userData) return [];
+        if (userData.suspended) return []; // Blocked
         if (userData.role === 'admin') return ['resolver', 'rms', 'pattern', 'kingpost', 'simulsat'];
 
         // Check trial
