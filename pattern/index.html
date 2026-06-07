@@ -196,7 +196,7 @@ select:focus,input:focus{outline:none;border-color:#1565C0}
 </div>
 <script src="plot.js"></script>
 <script>
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function(regs){regs.forEach(function(r){r.unregister();});});
 
 // ═══════════════════════════════════════════════════════════
 // USER AUTHENTICATION (Centralized via auth.js)
@@ -231,7 +231,6 @@ function doLogout() {
             document.getElementById('appContent').style.display = 'block';
         }
     });
-    }
 })();
 </script>
 </div><!-- end appContent -->
