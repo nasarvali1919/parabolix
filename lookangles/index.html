@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1B5E20">
+<title>Look Angles Calculator — Parabolix</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="../auth-firebase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f4f8;color:#333;font-size:14px}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.login-box{background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:360px;width:100%;text-align:center}
+.login-box h2{color:#1B5E20;font-size:20px;margin-bottom:6px}
+.login-box p{color:#666;font-size:13px;margin-bottom:20px}
+.login-box input{width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;margin-bottom:12px}
+.login-box input:focus{outline:none;border-color:#1B5E20}
+.login-box button{width:100%;padding:13px;background:#1B5E20;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
+.login-error{color:#D32F2F;font-size:13px;margin-top:8px;display:none}
+.app-content{display:none}
+.logout-btn{position:fixed;top:10px;right:12px;background:#D32F2F;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;z-index:200}
+.header{background:#1B5E20;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px}
+.header .ver{font-size:11px;opacity:.8}
+.container{max-width:900px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.07)}
+.card h2{font-size:13px;color:#1B5E20;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.row label{font-size:12px;color:#555;font-weight:500;min-width:90px}
+select,input[type="number"],input[type="text"]{padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px}
+select:focus,input:focus{outline:none;border-color:#1B5E20}
+.btn{padding:10px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+.btn:active{opacity:.7}
+.btn-primary{background:#1B5E20;color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:12px 0}
+.result-card{background:#f5f5f5;border-radius:10px;padding:14px;text-align:center;border:2px solid #e0e0e0}
+.result-card .value{font-size:22px;font-weight:700;color:#1B5E20}
+.result-card .label{font-size:10px;color:#777;margin-top:4px}
+.city-dropdown{position:absolute;background:#fff;border:1px solid #ddd;border-radius:6px;max-height:200px;overflow-y:auto;z-index:50;width:250px;box-shadow:0 4px 12px rgba(0,0,0,.15);display:none}
+.city-dropdown .city-item{padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f0f0}
+.city-dropdown .city-item:hover{background:#E8F5E9}
+.city-dropdown .city-item .country{color:#999;font-size:10px}
+.note{font-size:10px;color:#999;font-style:italic;margin-top:4px}
+.sat-info{background:#E8F5E9;border-radius:8px;padding:12px;margin:10px 0;font-size:12px}
+.formula-box{background:#f9f9f9;border-radius:8px;padding:12px;font-family:Consolas,monospace;font-size:11px;margin-top:10px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+<div class="login-box">
+<h2>🌍 Look Angles Calculator</h2>
+<p>Enter credentials to continue</p>
+<input type="text" id="loginUser" placeholder="Email" autocomplete="username">
+<input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+<button onclick="doLogin()">LOGIN</button>
+<p class="login-error" id="loginError"></p>
+</div>
+</div>
+
+<!-- APP -->
+<div id="appContent" class="app-content">
+<button class="logout-btn" onclick="doLogout()">Logout</button>
+<div class="header">
+<div><h1>🌍 Look Angles Calculator</h1></div>
+<div class="ver">22,000+ Cities | 50+ Satellites</div>
+</div>
+<div class="container">
+
+<!-- Site Location -->
+<div class="card">
+<h2>Site Location</h2>
+<div class="row" style="position:relative">
+<label>City:</label>
+<input type="text" id="citySearch" placeholder="Type city name..." style="width:250px" oninput="searchCity(this.value)" onfocus="searchCity(this.value)">
+<div class="city-dropdown" id="cityDropdown"></div>
+</div>
+<div class="row">
+<label>Latitude:</label>
+<input type="number" id="siteLat" step="any" style="width:100px" placeholder="°N/S">
+<label>Longitude:</label>
+<input type="number" id="siteLon" step="any" style="width:100px" placeholder="°E/W">
+</div>
+<p class="note">Positive latitude = North, Negative = South. Positive longitude = East, Negative = West.</p>
+</div>
+
+<!-- Satellite Selection -->
+<div class="card">
+<h2>Satellite</h2>
+<div class="row">
+<label>Select:</label>
+<select id="satSelect" onchange="onSatSelect()" style="width:280px">
+<option value="">-- Select satellite --</option>
+</select>
+</div>
+<div class="row">
+<label>Slot (°E):</label>
+<input type="number" id="satSlot" step="any" style="width:100px" placeholder="e.g. 83">
+</div>
+<div class="sat-info" id="satInfo" style="display:none"></div>
+</div>
+
+<!-- Calculate -->
+<div class="card">
+<button class="btn btn-primary" onclick="calculate()" style="width:100%;padding:14px;font-size:15px">📡 CALCULATE LOOK ANGLES</button>
+</div>
+
+<!-- Results -->
+<div class="card" id="resultsCard" style="display:none">
+<h2>Results</h2>
+<div class="results-grid" id="resultsGrid"></div>
+<div class="formula-box" id="formulaDetail"></div>
+</div>
+
+<!-- Multi-Satellite Table -->
+<div class="card">
+<h2>All Visible Satellites</h2>
+<button class="btn btn-sm btn-primary" onclick="calcAllSatellites()">Calculate All</button>
+<div id="allSatTable" style="margin-top:10px;overflow-x:auto"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+let CITIES=[];
+let SATS=[];
+
+// Load data files
+fetch('cities.json').then(r=>r.json()).then(d=>{CITIES=d;});
+fetch('satellites.json').then(r=>r.json()).then(d=>{
+    SATS=d;
+    const sel=document.getElementById('satSelect');
+    d.sort((a,b)=>a.slot-b.slot);
+    d.forEach(s=>{
+        const deg=s.slot>180?(s.slot-360).toFixed(1)+'°W':s.slot.toFixed(1)+'°E';
+        sel.innerHTML+=`<option value="${s.slot}">${s.name} (${deg})</option>`;
+    });
+});
+
+// ═══════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════
+function doLogin(){
+    const u=document.getElementById('loginUser').value.trim();
+    const p=document.getElementById('loginPass').value;
+    const errEl=document.getElementById('loginError');
+    firebase.auth().signInWithEmailAndPassword(u,p).then(()=>{
+        setTimeout(()=>{
+            if(ParabolixAuth.canAccessApp('lookangles')||ParabolixAuth.canAccessApp('simulsat')){showApp();}
+            else{errEl.textContent='No access. Subscribe at parabolix.in/v2/';errEl.style.display='block';}
+        },1000);
+    }).catch(err=>{errEl.textContent=err.message;errEl.style.display='block';});
+}
+function doLogout(){ParabolixAuth.logout();location.reload();}
+function showApp(){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('appContent').style.display='block';
+}
+(function(){
+    ParabolixAuth.onReady(function(){
+        const session=ParabolixAuth.getSession();
+        if(session&&(ParabolixAuth.canAccessApp('lookangles')||ParabolixAuth.canAccessApp('simulsat'))){showApp();}
+    });
+})();
+
+// ═══════════════════════════════════════════════════════════
+// CITY SEARCH
+// ═══════════════════════════════════════════════════════════
+function searchCity(query){
+    const dd=document.getElementById('cityDropdown');
+    if(!query||query.length<2){dd.style.display='none';return;}
+    const q=query.toLowerCase();
+    const matches=CITIES.filter(c=>c.c.toLowerCase().startsWith(q)).slice(0,15);
+    if(matches.length===0){dd.style.display='none';return;}
+    dd.innerHTML=matches.map(c=>`<div class="city-item" onclick="selectCity('${c.c.replace(/'/g,"\\'")}',${c.la},${c.lo},'${c.co.replace(/'/g,"\\'")}')">${c.c} <span class="country">${c.co} (${c.la.toFixed(2)}°, ${c.lo.toFixed(2)}°)</span></div>`).join('');
+    dd.style.display='block';
+}
+function selectCity(name,lat,lon,country){
+    document.getElementById('citySearch').value=name+', '+country;
+    document.getElementById('siteLat').value=lat;
+    document.getElementById('siteLon').value=lon;
+    document.getElementById('cityDropdown').style.display='none';
+}
+document.addEventListener('click',function(e){
+    if(!e.target.closest('#citySearch')&&!e.target.closest('#cityDropdown')){
+        document.getElementById('cityDropdown').style.display='none';
+    }
+});
+
+function onSatSelect(){
+    const slot=parseFloat(document.getElementById('satSelect').value);
+    if(!isNaN(slot)){
+        document.getElementById('satSlot').value=slot;
+        const sat=SATS.find(s=>s.slot===slot);
+        if(sat){
+            const deg=slot>180?(slot-360).toFixed(1)+'°W':slot.toFixed(1)+'°E';
+            document.getElementById('satInfo').innerHTML=`<b>${sat.name}</b> — Orbital Slot: ${deg}`;
+            document.getElementById('satInfo').style.display='';
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOOK ANGLE CALCULATION
+// ═══════════════════════════════════════════════════════════
+function calcLookAngles(lat,lon,satSlot){
+    const latR=lat*Math.PI/180;
+    const lonSite=lon;
+    let lonSat=satSlot;
+    // Convert slot to standard longitude (slots >180 are west)
+    if(lonSat>180) lonSat=lonSat-360;
+    const B=(lonSat-lonSite)*Math.PI/180;
+
+    // Elevation
+    const cosLatCosB=Math.cos(latR)*Math.cos(B);
+    const el=Math.atan2(cosLatCosB-0.1512,Math.sqrt(1-cosLatCosB*cosLatCosB))*180/Math.PI;
+
+    // Azimuth
+    const azBase=Math.atan2(Math.tan(B),Math.sin(latR))*180/Math.PI;
+    let az;
+    if(lat>=0){
+        // Northern hemisphere
+        if(lonSat>=lonSite) az=180-azBase;
+        else az=180+Math.abs(azBase);
+    } else {
+        // Southern hemisphere
+        if(lonSat>=lonSite) az=azBase;
+        else az=360-Math.abs(azBase);
+    }
+    if(az<0) az+=360;
+    if(az>=360) az-=360;
+
+    // Slant Range (km)
+    const range=35786*Math.sqrt(1.023-0.3023*cosLatCosB);
+
+    // Polarisation (linear)
+    const pol=Math.atan2(Math.sin(B),Math.tan(latR))*180/Math.PI;
+
+    return {el,az,range,pol};
+}
+
+function calculate(){
+    const lat=parseFloat(document.getElementById('siteLat').value);
+    const lon=parseFloat(document.getElementById('siteLon').value);
+    const slot=parseFloat(document.getElementById('satSlot').value);
+    if(isNaN(lat)||isNaN(lon)||isNaN(slot)){alert('Enter latitude, longitude and satellite slot.');return;}
+
+    const r=calcLookAngles(lat,lon,slot);
+
+    const card=document.getElementById('resultsCard');
+    card.style.display='';
+
+    let satName='Custom';
+    const sat=SATS.find(s=>s.slot===slot);
+    if(sat) satName=sat.name;
+
+    const grid=document.getElementById('resultsGrid');
+    grid.innerHTML=`
+        <div class="result-card"><div class="value">${r.az.toFixed(2)}°</div><div class="label">Azimuth (True North)</div></div>
+        <div class="result-card"><div class="value">${r.el.toFixed(2)}°</div><div class="label">Elevation</div></div>
+        <div class="result-card"><div class="value">${r.pol.toFixed(2)}°</div><div class="label">Polarisation Skew</div></div>
+        <div class="result-card"><div class="value">${r.range.toFixed(0)} km</div><div class="label">Slant Range</div></div>
+    `;
+
+    const vis=r.el>0?'✅ Satellite is VISIBLE':'❌ Satellite is BELOW horizon';
+    const detail=document.getElementById('formulaDetail');
+    detail.innerHTML=`<b>Satellite:</b> ${satName} (${slot>180?(slot-360).toFixed(1)+'°W':slot.toFixed(1)+'°E'})
+<b>Site:</b> Lat ${lat.toFixed(4)}°, Lon ${lon.toFixed(4)}°
+<b>Visibility:</b> ${vis}
+
+<b>Formulae Used:</b>
+  B = (SatLon - SiteLon) = ${((slot>180?slot-360:slot)-lon).toFixed(4)}°
+  El = atan2(cos(lat)·cos(B) - 0.1512, √(1 - cos²(lat)·cos²(B)))
+  Az = 180° - atan2(tan(B), sin(lat))  [N.Hemisphere, Sat East]
+  Range = 35786 × √(1.023 - 0.3023·cos(lat)·cos(B))
+  Pol = atan2(sin(B), tan(lat))`;
+
+    card.scrollIntoView({behavior:'smooth'});
+}
+
+function calcAllSatellites(){
+    const lat=parseFloat(document.getElementById('siteLat').value);
+    const lon=parseFloat(document.getElementById('siteLon').value);
+    if(isNaN(lat)||isNaN(lon)){alert('Enter latitude and longitude first.');return;}
+
+    let html='<table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#1B5E20;color:#fff"><th style="padding:6px">Satellite</th><th>Slot</th><th>Azimuth</th><th>Elevation</th><th>Pol Skew</th><th>Range (km)</th></tr>';
+    const sorted=[...SATS].sort((a,b)=>a.slot-b.slot);
+    sorted.forEach(s=>{
+        const r=calcLookAngles(lat,lon,s.slot);
+        if(r.el<0) return; // Skip below-horizon satellites
+        const deg=s.slot>180?(s.slot-360).toFixed(1)+'°W':s.slot.toFixed(1)+'°E';
+        html+=`<tr style="border-bottom:1px solid #eee"><td style="padding:4px;font-weight:600">${s.name}</td><td style="text-align:center">${deg}</td><td style="text-align:center">${r.az.toFixed(2)}°</td><td style="text-align:center">${r.el.toFixed(2)}°</td><td style="text-align:center">${r.pol.toFixed(2)}°</td><td style="text-align:center">${r.range.toFixed(0)}</td></tr>`;
+    });
+    html+='</table>';
+    document.getElementById('allSatTable').innerHTML=html;
+}
+</script>
+</body>
+</html>
