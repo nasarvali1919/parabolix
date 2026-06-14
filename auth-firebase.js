@@ -91,11 +91,11 @@ const ParabolixAuth = (function() {
     function getAllowedApps(userData) {
         if (!userData) return [];
         if (userData.suspended) return []; // Blocked
-        if (userData.role === 'admin') return ['resolver', 'rms', 'pattern', 'kingpost', 'simulsat'];
+        if (userData.role === 'admin') return ['resolver', 'rms', 'pattern', 'kingpost', 'simulsat', 'lookangles'];
 
         // Check trial
         if (userData.trialEnd && new Date() < new Date(userData.trialEnd)) {
-            return ['resolver', 'rms', 'pattern', 'kingpost', 'simulsat'];
+            return ['resolver', 'rms', 'pattern', 'kingpost', 'simulsat', 'lookangles'];
         }
 
         // Check subscriptions
