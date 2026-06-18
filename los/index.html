@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#E65100">
+<title>LOS Obstruction Analyser — Parabolix</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="../auth-firebase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;color:#333;font-size:14px}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.login-box{background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:360px;width:100%;text-align:center}
+.login-box h2{color:#E65100;font-size:20px;margin-bottom:6px}
+.login-box p{color:#666;font-size:13px;margin-bottom:20px}
+.login-box input{width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;margin-bottom:12px}
+.login-box input:focus{outline:none;border-color:#E65100}
+.login-box button{width:100%;padding:13px;background:#E65100;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
+.login-error{color:#D32F2F;font-size:13px;margin-top:8px;display:none}
+.app-content{display:none}
+.logout-btn{position:fixed;top:10px;right:12px;background:#D32F2F;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;z-index:200}
+.header{background:linear-gradient(135deg,#E65100,#BF360C);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:16px}
+.container{max-width:1000px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.07)}
+.card h2{font-size:12px;color:#E65100;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #FFF3E0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.row label{font-size:12px;color:#555;font-weight:500;min-width:100px}
+select,input[type="number"],input[type="text"]{padding:8px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px}
+select:focus,input:focus{outline:none;border-color:#E65100}
+.btn{padding:9px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+.btn:active{opacity:.7}
+.btn-primary{background:#E65100;color:#fff}
+.btn-green{background:#2E7D32;color:#fff}
+.btn-red{background:#D32F2F;color:#fff}
+.btn-sm{padding:6px 10px;font-size:11px}
+.btn-full{width:100%;padding:12px;font-size:14px}
+.pass{color:#2E7D32;font-weight:700}
+.fail{color:#D32F2F;font-weight:700}
+.warn{color:#E65100;font-weight:700}
+.note{font-size:10px;color:#999;font-style:italic;margin-top:4px}
+.obs-item{background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:10px;margin:6px 0;display:flex;justify-content:space-between;align-items:center}
+.obs-item .info{font-size:12px}
+.obs-item .angle{font-size:14px;font-weight:700}
+canvas{border:1px solid #e0e0e0;border-radius:8px;background:#fff;width:100%;max-height:300px}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.result-card{background:#FFF3E0;border:2px solid #FFE0B2;border-radius:10px;padding:14px;text-align:center}
+.result-card .value{font-size:20px;font-weight:700;color:#E65100}
+.result-card .label{font-size:10px;color:#777;margin-top:4px}
+/* Help Diagram Styles */
+.help-toggle{display:inline-flex;align-items:center;gap:5px;background:#FFF3E0;border:1.5px solid #FFE0B2;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;color:#E65100;cursor:pointer;margin-left:8px;transition:all .2s}
+.help-toggle:hover{background:#FFE0B2;border-color:#E65100}
+.help-toggle svg{width:14px;height:14px}
+.help-diagram{display:none;margin-top:10px;border:1.5px solid #FFE0B2;border-radius:10px;background:#FFFDE7;padding:16px;animation:fadeIn .3s ease}
+.help-diagram.show{display:block}
+.help-diagram svg{width:100%;max-width:500px;display:block;margin:0 auto}
+.help-diagram .caption{font-size:10px;color:#666;text-align:center;margin-top:8px;font-style:italic}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.results-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+<div class="login-box">
+<h2>🏗️ LOS Obstruction Analyser</h2>
+<p>Line of Sight Analysis for Satellite Antennas</p>
+<input type="text" id="loginUser" placeholder="Email">
+<input type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+<button onclick="doLogin()">LOGIN</button>
+<p class="login-error" id="loginError"></p>
+</div>
+</div>
+
+<!-- APP -->
+<div id="appContent" class="app-content">
+<button class="logout-btn" onclick="doLogout()">Logout</button>
+<div class="header"><h1>🏗️ LOS Obstruction Analyser</h1></div>
+<div class="container">
+
+<!-- Antenna Setup -->
+<div class="card">
+<h2>Antenna Configuration</h2>
+<div class="row">
+<label>Antenna Type:</label>
+<select id="antennaType" onchange="onAntennaSelect()">
+<option value="custom">Custom</option>
+<option value="viasat_13.5">ViaSat 13.5m (Ka/Ku)</option>
+<option value="viasat_9.1">ViaSat 9.1m</option>
+<option value="asc_7.6">ASC Signal 7.6m</option>
+<option value="asc_9.3">ASC Signal 9.3m</option>
+<option value="gd_9.0">GD/Vertex 9.0m</option>
+<option value="gd_11.1">GD/Vertex 11.1m</option>
+<option value="andrew_4.5">Andrew/CommScope 4.5m</option>
+<option value="andrew_6.1">Andrew/CommScope 6.1m</option>
+<option value="prodelin_3.7">Prodelin 3.7m</option>
+<option value="prodelin_4.5">Prodelin 4.5m</option>
+</select>
+</div>
+<div class="row">
+<label>Diameter (m):</label>
+<input type="number" id="antDia" step="0.1" style="width:80px" value="7.6">
+<label>Feed Height (m):</label>
+<input type="number" id="antFeedH" step="0.1" style="width:80px" value="5.5" title="Height of feed center above ground">
+<label>Pedestal (m):</label>
+<input type="number" id="antPedH" step="0.1" style="width:80px" value="2.0" title="Pedestal/foundation height">
+</div>
+<div class="row">
+<label>Sat Elevation:</label>
+<input type="number" id="satElev" step="0.1" style="width:80px" value="55" title="Satellite elevation angle (degrees)">°
+<label>Sat Azimuth:</label>
+<input type="number" id="satAz" step="0.1" style="width:80px" value="169">°
+</div>
+<p class="note">Feed Height = pedestal + half diameter (approx center of reflector). Sat elevation from Look Angles tool.</p>
+<button class="help-toggle" onclick="toggleHelp('antHelp')">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+What do these inputs mean?
+</button>
+<div class="help-diagram" id="antHelp">
+<div style="font-size:12px;line-height:2;padding:10px">
+<b style="color:#E65100">INPUT FIELDS EXPLAINED:</b><br>
+📐 <b>Diameter</b> — Reflector dish diameter in meters (e.g. 7.6m)<br>
+📍 <b>Feed Height</b> — Height from ground to the antenna feed center (typically pedestal + half diameter)<br>
+🏗️ <b>Pedestal</b> — Height of the pedestal/foundation above ground level<br>
+📡 <b>Sat Elevation</b> — Satellite elevation angle from Look Angles calculator<br>
+🧭 <b>Sat Azimuth</b> — Compass direction to the satellite (0°=North, 90°=East, 180°=South)
+</div>
+</div>
+</div>
+
+<!-- Obstructions -->
+<div class="card">
+<h2>Obstructions</h2>
+<div class="row">
+<label>Type:</label>
+<select id="obsType" style="width:140px">
+<option value="Building">Building</option>
+<option value="Tree">Tree</option>
+<option value="Electric Pole">Electric Pole</option>
+<option value="Power Line">Power Line</option>
+<option value="Power Grid Tower">Power Grid Tower</option>
+<option value="Antenna">Antenna (nearby dish)</option>
+<option value="Airport">Airport (clearance zone)</option>
+<option value="Misc">Misc Obstruction</option>
+</select>
+<label>Distance (m):</label>
+<input type="number" id="obsDist" step="0.1" style="width:80px" placeholder="50">
+<label>Height (m):</label>
+<input type="number" id="obsHeight" step="0.1" style="width:80px" placeholder="15">
+</div>
+<div class="row">
+<label>Bearing (°):</label>
+<input type="number" id="obsBearing" step="0.1" style="width:80px" placeholder="180" title="Azimuth from antenna to obstruction">
+<label>Width (m):</label>
+<input type="number" id="obsWidth" step="0.1" style="width:80px" placeholder="20" title="Width of obstruction (for azimuth sweep)">
+<label>Depth (m):</label>
+<input type="number" id="obsDepth" step="0.1" style="width:60px" placeholder="10" title="Building depth (perpendicular to width)">
+<label>Corner1 (°):</label>
+<input type="number" id="obsCorner1" step="0.1" style="width:65px" placeholder="" title="Compass bearing to left corner of building face">
+<label>Corner2 (°):</label>
+<input type="number" id="obsCorner2" step="0.1" style="width:65px" placeholder="" title="Compass bearing to right corner of building face">
+<button class="btn btn-primary btn-sm" onclick="addObstruction()">+ Add</button>
+</div>
+<p class="note">Distance = nearest point of building to antenna. Corner1 & Corner2 = compass bearings to two ends of the building face (for orientation). Leave blank to auto-face antenna.</p>
+<button class="help-toggle" onclick="toggleHelp('obsHelp')">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+What do these inputs mean?
+</button>
+<div class="help-diagram" id="obsHelp">
+<div style="font-size:12px;line-height:2;padding:10px">
+<b style="color:#E65100">OBSTRUCTION INPUT FIELDS:</b><br>
+📏 <b>Distance</b> — From antenna center to the NEAREST point of the obstruction (meters)<br>
+📐 <b>Height</b> — Top of the obstruction above ground level (meters)<br>
+🧭 <b>Bearing</b> — Compass direction from antenna to obstruction center (0°=N, 90°=E, 180°=S, 270°=W)<br>
+↔️ <b>Width</b> — How wide the building/obstruction face is (the side facing antenna, meters)<br>
+↕️ <b>Depth</b> — How deep the building goes away from antenna (perpendicular to width, meters)<br>
+🔸 <b>Corner1° / Corner2°</b> — Compass bearing to left & right edges of the building face (optional, for orientation)<br><br>
+<b style="color:#2E7D32">HOW TO MEASURE IN THE FIELD:</b><br>
+1️⃣ Use a tape/laser to measure <b>Distance</b> from your antenna to the nearest wall<br>
+2️⃣ Estimate or measure the <b>Height</b> of the rooftop (count floors × 3.5m)<br>
+3️⃣ Use a compass to get the <b>Bearing</b> from your antenna toward the obstruction<br>
+4️⃣ For buildings: measure or estimate <b>Width</b> of the face you can see<br>
+5️⃣ Optional: take compass readings to both corners of the building for accurate <b>orientation</b>
+</div>
+</div>
+<div id="obsList"></div>
+</div>
+<line x1="80" y1="60" x2="80" y2="80" stroke="#999" stroke-width="1.5"/>
+<polygon points="80,55 77,63 83,63" fill="#999"/>
+<text x="75" y="52" font-size="8" fill="#999" font-weight="bold">N</text>
+
+<!-- Building (rectangle) -->
+<rect x="170" y="100" width="80" height="40" fill="rgba(158,158,158,0.3)" stroke="#333" stroke-width="2" rx="2"/>
+<text x="195" y="123" font-size="8" fill="#333" font-weight="bold">BUILDING</text>
+
+<!-- Distance line (ant to nearest building edge) -->
+<line x1="92" y1="220" x2="170" y2="130" stroke="#1565C0" stroke-width="1.5"/>
+<circle cx="170" cy="130" r="3" fill="#1565C0"/>
+<text x="105" y="175" font-size="9" fill="#1565C0" font-weight="bold" transform="rotate(-35,130,180)">Distance</text>
+<text x="108" y="188" font-size="7" fill="#1565C0" transform="rotate(-35,130,193)">(nearest pt)</text>
+
+<!-- Width dimension -->
+<line x1="170" y1="90" x2="250" y2="90" stroke="#7B1FA2" stroke-width="1.5"/>
+<line x1="170" y1="85" x2="170" y2="95" stroke="#7B1FA2" stroke-width="1.5"/>
+<line x1="250" y1="85" x2="250" y2="95" stroke="#7B1FA2" stroke-width="1.5"/>
+<text x="195" y="84" font-size="9" fill="#7B1FA2" font-weight="bold">Width</text>
+
+<!-- Depth dimension -->
+<line x1="260" y1="100" x2="260" y2="140" stroke="#E65100" stroke-width="1.5"/>
+<line x1="255" y1="100" x2="265" y2="100" stroke="#E65100" stroke-width="1.5"/>
+<line x1="255" y1="140" x2="265" y2="140" stroke="#E65100" stroke-width="1.5"/>
+<text x="265" y="123" font-size="9" fill="#E65100" font-weight="bold">Depth</text>
+
+<!-- Bearing angle arc -->
+<path d="M 80 200 A 20 20 0 0 1 92 195" fill="none" stroke="#FF6F00" stroke-width="1.5"/>
+<line x1="80" y1="220" x2="80" y2="195" stroke="#999" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="88" y="195" font-size="8" fill="#FF6F00" font-weight="bold">Bearing°</text>
+
+<!-- Corner 1 line -->
+<line x1="80" y1="220" x2="170" y2="100" stroke="#9C27B0" stroke-width="1" stroke-dasharray="3,2"/>
+<circle cx="170" cy="100" r="4" fill="#9C27B0"/>
+<text x="155" y="72" font-size="8" fill="#9C27B0" font-weight="bold">Corner1°</text>
+<text x="155" y="82" font-size="7" fill="#9C27B0">(left edge)</text>
+
+<!-- Corner 2 line -->
+<line x1="80" y1="220" x2="250" y2="100" stroke="#9C27B0" stroke-width="1" stroke-dasharray="3,2"/>
+<circle cx="250" cy="100" r="4" fill="#9C27B0"/>
+<text x="245" y="72" font-size="8" fill="#9C27B0" font-weight="bold">Corner2°</text>
+<text x="245" y="82" font-size="7" fill="#9C27B0">(right edge)</text>
+
+<!-- ═══ SIDE VIEW ═══ -->
+<rect x="300" y="30" width="270" height="250" fill="#FAFAFA" stroke="#ddd" stroke-width="1" rx="6"/>
+<text x="435" y="48" font-size="10" fill="#E65100" font-weight="bold" text-anchor="middle">SIDE VIEW (Elevation)</text>
+
+<!-- Ground -->
+<line x1="310" y1="250" x2="560" y2="250" stroke="#4CAF50" stroke-width="2"/>
+<text x="520" y="265" font-size="7" fill="#666">Ground</text>
+
+<!-- Antenna side view (in obstruction help) — tilted dish like analysis view -->
+<rect x="333" y="225" width="10" height="25" fill="#BBDEFB" stroke="#1565C0" stroke-width="1" rx="1"/>
+<!-- Az/El mount -->
+<rect x="330" y="220" width="16" height="7" fill="#90CAF9" stroke="#1565C0" stroke-width="1"/>
+<!-- Dish arc tilted toward satellite (matching analysis canvas style) -->
+<path d="M 322 218 C 326 208, 335 195, 345 188 C 348 195, 352 208, 354 218" fill="none" stroke="#1565C0" stroke-width="2.5" stroke-linecap="round"/>
+<!-- Feed strut -->
+<line x1="338" y1="205" x2="356" y2="185" stroke="#1565C0" stroke-width="1"/>
+<!-- Feed point -->
+<circle cx="356" cy="185" r="3" fill="#E65100"/>
+<text x="320" y="270" font-size="7" fill="#1565C0" font-weight="bold">Antenna</text>
+
+<!-- Building side view -->
+<rect x="450" y="100" width="40" height="150" fill="#E0E0E0" stroke="#333" stroke-width="1.5"/>
+<!-- Roof cap -->
+<rect x="447" y="97" width="46" height="4" fill="#616161"/>
+<!-- Floor lines -->
+<line x1="450" y1="137" x2="490" y2="137" stroke="#B0BEC5" stroke-width="0.5"/>
+<line x1="450" y1="175" x2="490" y2="175" stroke="#B0BEC5" stroke-width="0.5"/>
+<line x1="450" y1="212" x2="490" y2="212" stroke="#B0BEC5" stroke-width="0.5"/>
+<!-- Windows -->
+<rect x="455" y="108" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<rect x="465" y="108" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<rect x="475" y="108" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<rect x="455" y="145" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<rect x="465" y="145" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<rect x="475" y="145" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<rect x="455" y="183" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<rect x="465" y="183" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<rect x="475" y="183" width="6" height="8" fill="#B3E5FC" stroke="#78909C" stroke-width="0.5"/>
+<!-- Door -->
+<rect x="466" y="237" width="8" height="13" fill="#795548"/>
+<text x="455" y="130" font-size="7" fill="#333">Building</text>
+
+<!-- Height dimension -->
+<line x1="500" y1="250" x2="500" y2="100" stroke="#E91E63" stroke-width="1.5"/>
+<line x1="495" y1="250" x2="505" y2="250" stroke="#E91E63" stroke-width="1.2"/>
+<line x1="495" y1="100" x2="505" y2="100" stroke="#E91E63" stroke-width="1.2"/>
+<text x="507" y="175" font-size="9" fill="#E91E63" font-weight="bold">Height</text>
+
+<!-- Distance dimension (horizontal) -->
+<line x1="335" y1="260" x2="450" y2="260" stroke="#1565C0" stroke-width="1.5"/>
+<line x1="335" y1="255" x2="335" y2="265" stroke="#1565C0" stroke-width="1.2"/>
+<line x1="450" y1="255" x2="450" y2="265" stroke="#1565C0" stroke-width="1.2"/>
+<text x="370" y="275" font-size="9" fill="#1565C0" font-weight="bold">Distance</text>
+
+<!-- LOS line -->
+<line x1="335" y1="198" x2="555" y2="70" stroke="#4CAF50" stroke-width="1.2" stroke-dasharray="5,3"/>
+<text x="510" y="65" font-size="8" fill="#4CAF50" font-weight="bold">→ Sat</text>
+
+<!-- Obstruction angle -->
+<line x1="335" y1="198" x2="450" y2="100" stroke="#D32F2F" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="370" y="140" font-size="7" fill="#D32F2F" font-weight="bold">Obs Angle</text>
+
+<!-- ═══ LEGEND ═══ -->
+<rect x="10" y="290" width="560" height="100" fill="#fff" stroke="#eee" stroke-width="1" rx="6"/>
+<text x="20" y="308" font-size="10" fill="#333" font-weight="bold">FIELD GUIDE:</text>
+<circle cx="25" cy="322" r="4" fill="#1565C0"/><text x="35" y="326" font-size="9" fill="#333"><tspan font-weight="bold">Distance</tspan> — From antenna center to the NEAREST point of the obstruction (meters)</text>
+<circle cx="25" cy="340" r="4" fill="#E91E63"/><text x="35" y="344" font-size="9" fill="#333"><tspan font-weight="bold">Height</tspan> — Top of the obstruction above ground level (meters)</text>
+<circle cx="25" cy="358" r="4" fill="#7B1FA2"/><text x="35" y="362" font-size="9" fill="#333"><tspan font-weight="bold">Width</tspan> — How wide the building face is (the side facing antenna, meters)</text>
+<circle cx="25" cy="376" r="4" fill="#E65100"/><text x="35" y="380" font-size="9" fill="#333"><tspan font-weight="bold">Depth</tspan> — How deep the building goes AWAY from you (perpendicular to width, meters)</text>
+<circle cx="305" cy="322" r="4" fill="#FF6F00"/><text x="315" y="326" font-size="9" fill="#333"><tspan font-weight="bold">Bearing</tspan> — Compass direction from antenna to the obstruction center (degrees, 0=N)</text>
+<circle cx="305" cy="340" r="4" fill="#9C27B0"/><text x="315" y="344" font-size="9" fill="#333"><tspan font-weight="bold">Corner1/2</tspan> — Compass bearing to left &amp; right edges of building face (optional)</text>
+</svg>
+<p class="caption">Measure Distance with a tape/laser from your antenna to the nearest building wall. Height = top of roof. Width = length of the wall facing you. Corners = compass readings to both ends of that wall.</p>
+</div>
+<div id="obsList"></div>
+</div>
+
+<!-- Analyse -->
+<div class="card">
+<button class="btn btn-primary btn-full" onclick="analyse()">🔍 ANALYSE LINE OF SIGHT</button>
+</div>
+
+<!-- Results -->
+<div class="card" id="resultsCard" style="display:none">
+<h2>Analysis Results</h2>
+<div class="results-grid" id="resultsGrid"></div>
+<div id="obsResults"></div>
+</div>
+
+<!-- Visual Side View -->
+<div class="card" id="sideViewCard" style="display:none">
+<h2>Side View — Elevation Profile</h2>
+<canvas id="sideCanvas" width="900" height="400"></canvas>
+</div>
+
+<!-- Azimuth Sweep -->
+<div class="card" id="azSweepCard" style="display:none">
+<h2>Plan View — Top Down Layout</h2>
+<canvas id="azCanvas" width="800" height="500"></canvas>
+</div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// HELP DIAGRAM TOGGLE
+// ═══════════════════════════════════════════════════════════
+function toggleHelp(id){
+    const el=document.getElementById(id);
+    el.classList.toggle('show');
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════
+function doLogin(){
+    const u=document.getElementById('loginUser').value.trim();
+    const p=document.getElementById('loginPass').value;
+    const errEl=document.getElementById('loginError');
+    firebase.auth().signInWithEmailAndPassword(u,p).then(()=>{
+        setTimeout(()=>{if(ParabolixAuth.getSession()){showApp();}else{errEl.textContent='No access.';errEl.style.display='block';}},1000);
+    }).catch(err=>{errEl.textContent=err.message;errEl.style.display='block';});
+}
+function doLogout(){ParabolixAuth.logout();location.reload();}
+function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appContent').style.display='block';}
+(function(){ParabolixAuth.onReady(function(){if(ParabolixAuth.getSession())showApp();});})();
+
+// ═══════════════════════════════════════════════════════════
+// ANTENNA DATABASE
+// ═══════════════════════════════════════════════════════════
+const ANTENNA_DB={
+    'viasat_13.5':{dia:13.5,feedH:10.2,pedH:4.5,focalLen:5.3,desc:'ViaSat 13.5m Ka/Ku — Overall Ht ~18m'},
+    'viasat_9.1':{dia:9.1,feedH:7.2,pedH:3.5,focalLen:3.6,desc:'ViaSat 9.1m — Overall Ht ~12.5m'},
+    'asc_7.6':{dia:7.6,feedH:5.8,pedH:2.7,focalLen:2.85,desc:'ASC Signal 7.6m — Overall Ht ~10.5m'},
+    'asc_9.3':{dia:9.3,feedH:7.0,pedH:3.2,focalLen:3.5,desc:'ASC Signal 9.3m — Overall Ht ~13m'},
+    'gd_9.0':{dia:9.0,feedH:6.8,pedH:3.0,focalLen:3.4,desc:'GD/Vertex 9.0m (0900CA) — Overall Ht ~12.5m'},
+    'gd_11.1':{dia:11.1,feedH:8.5,pedH:3.8,focalLen:4.2,desc:'GD/Vertex 11.1m — Overall Ht ~15m'},
+    'andrew_4.5':{dia:4.5,feedH:4.0,pedH:2.2,focalLen:1.7,desc:'Andrew/CommScope 4.5m — Overall Ht ~7m'},
+    'andrew_6.1':{dia:6.1,feedH:5.0,pedH:2.5,focalLen:2.3,desc:'Andrew/CommScope 6.1m — Overall Ht ~8.5m'},
+    'prodelin_3.7':{dia:3.7,feedH:3.4,pedH:1.8,focalLen:1.4,desc:'Prodelin 3.7m — Overall Ht ~5.8m'},
+    'prodelin_4.5':{dia:4.5,feedH:4.0,pedH:2.0,focalLen:1.7,desc:'Prodelin 4.5m — Overall Ht ~6.8m'}
+};
+
+function onAntennaSelect(){
+    const sel=document.getElementById('antennaType').value;
+    const ant=ANTENNA_DB[sel];
+    if(ant){
+        document.getElementById('antDia').value=ant.dia;
+        document.getElementById('antFeedH').value=ant.feedH;
+        document.getElementById('antPedH').value=ant.pedH;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// OBSTRUCTIONS
+// ═══════════════════════════════════════════════════════════
+let obstructions=[];
+
+function addObstruction(){
+    const type=document.getElementById('obsType').value;
+    const dist=parseFloat(document.getElementById('obsDist').value);
+    const height=parseFloat(document.getElementById('obsHeight').value);
+    const bearing=parseFloat(document.getElementById('obsBearing').value);
+    const width=parseFloat(document.getElementById('obsWidth').value)||0;
+    const depth=parseFloat(document.getElementById('obsDepth').value)||0;
+    const corner1=parseFloat(document.getElementById('obsCorner1').value);
+    const corner2=parseFloat(document.getElementById('obsCorner2').value);
+    // Calculate orient from corners: face direction = midpoint of two corner bearings
+    let orient=0;
+    if(!isNaN(corner1)&&!isNaN(corner2)){
+        // The building face runs between corner1 and corner2
+        // Face normal = perpendicular to the line between corners = midpoint bearing
+        const mid=(corner1+corner2)/2;
+        // Orient = the angle of the building face itself (the line between corners)
+        orient=mid-bearing; // offset from auto-orient
+    }
+    if(isNaN(dist)||isNaN(height)){alert('Enter distance and height.');return;}
+    obstructions.push({type,dist,height,bearing:isNaN(bearing)?0:bearing,width,depth,orient,corner1:isNaN(corner1)?null:corner1,corner2:isNaN(corner2)?null:corner2});
+    renderObsList();
+    document.getElementById('obsDist').value='';
+    document.getElementById('obsHeight').value='';
+    document.getElementById('obsBearing').value='';
+    document.getElementById('obsWidth').value='';
+    document.getElementById('obsDepth').value='';
+    document.getElementById('obsCorner1').value='';
+    document.getElementById('obsCorner2').value='';
+}
+
+function removeObs(i){obstructions.splice(i,1);renderObsList();}
+
+function renderObsList(){
+    const el=document.getElementById('obsList');
+    if(obstructions.length===0){el.innerHTML='<p class="note">No obstructions added yet.</p>';return;}
+    el.innerHTML=obstructions.map((o,i)=>{
+        const angle=Math.atan2(o.height-parseFloat(document.getElementById('antFeedH').value||5),o.dist)*180/Math.PI;
+        return `<div class="obs-item"><div class="info"><b>${o.type}</b> — ${o.dist}m away, ${o.height}m tall, bearing ${o.bearing}°${o.width?', width '+o.width+'m':''}${o.depth?', depth '+o.depth+'m':''}</div><div><span class="angle">${angle.toFixed(1)}°</span> <button class="btn btn-sm" style="background:#FF9800;color:#fff" onclick="editObs(${i})">✎</button> <button class="btn btn-red btn-sm" onclick="removeObs(${i})">✕</button></div></div>`;
+    }).join('');
+}
+
+function editObs(i){
+    const o=obstructions[i];
+    document.getElementById('obsType').value=o.type;
+    document.getElementById('obsDist').value=o.dist;
+    document.getElementById('obsHeight').value=o.height;
+    document.getElementById('obsBearing').value=o.bearing||'';
+    document.getElementById('obsWidth').value=o.width||'';
+    document.getElementById('obsDepth').value=o.depth||'';
+    document.getElementById('obsCorner1').value=o.corner1||'';
+    document.getElementById('obsCorner2').value=o.corner2||'';
+    // Remove the old entry
+    obstructions.splice(i,1);
+    renderObsList();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANALYSIS
+// ═══════════════════════════════════════════════════════════
+function analyse(){
+    const feedH=parseFloat(document.getElementById('antFeedH').value)||5;
+    const pedH=parseFloat(document.getElementById('antPedH').value)||2;
+    const dia=parseFloat(document.getElementById('antDia').value)||7.6;
+    const satElev=parseFloat(document.getElementById('satElev').value)||55;
+    const satAz=parseFloat(document.getElementById('satAz').value)||180;
+    const totalAntH=pedH+dia; // Top of reflector approx
+
+    if(obstructions.length===0){alert('Add at least one obstruction.');return;}
+
+    // Analyse each obstruction
+    let results=[];
+    let worstClearance=999;
+    let anyBlock=false;
+
+    obstructions.forEach((o,i)=>{
+        // Angle from feed center to top of obstruction
+        const obsAngle=Math.atan2(o.height-feedH,o.dist)*180/Math.PI;
+        // Clearance = satellite elevation - obstruction angle
+        const clearance=satElev-obsAngle;
+        const pass=clearance>0;
+        if(!pass) anyBlock=true;
+        if(clearance<worstClearance) worstClearance=clearance;
+
+        // Azimuth check — is this obstruction in the satellite path?
+        let azBlock=false;
+        if(!isNaN(o.bearing)){
+            const halfAng=o.width>0?Math.atan2(o.width/2,o.dist)*180/Math.PI:2;
+            const azDiff=Math.abs(satAz-o.bearing);
+            azBlock=azDiff<=halfAng;
+        }
+
+        results.push({...o,obsAngle,clearance,pass,azBlock,idx:i});
+    });
+
+    // Show results
+    document.getElementById('resultsCard').style.display='';
+    document.getElementById('sideViewCard').style.display='';
+    document.getElementById('azSweepCard').style.display='';
+
+    const grid=document.getElementById('resultsGrid');
+    grid.innerHTML=`
+        <div class="result-card"><div class="value ${anyBlock?'fail':'pass'}">${anyBlock?'❌ BLOCKED':'✅ CLEAR'}</div><div class="label">Overall Status</div></div>
+        <div class="result-card"><div class="value">${satElev.toFixed(1)}°</div><div class="label">Satellite Elevation</div></div>
+        <div class="result-card"><div class="value ${worstClearance<5?'warn':'pass'}">${worstClearance.toFixed(1)}°</div><div class="label">Min Clearance</div></div>
+        <div class="result-card"><div class="value">${obstructions.length}</div><div class="label">Obstructions Checked</div></div>
+    `;
+
+    // Detailed results
+    let html='<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:10px"><tr style="background:#E65100;color:#fff"><th style="padding:6px">#</th><th>Type</th><th>Distance</th><th>Height</th><th>Obs Angle</th><th>Clearance</th><th>Status</th><th>In Path?</th></tr>';
+    results.forEach(r=>{
+        const status=r.pass?'<span class="pass">CLEAR</span>':'<span class="fail">BLOCKED</span>';
+        const inPath=r.azBlock?'<span class="fail">YES ⚠️</span>':'<span class="pass">No</span>';
+        html+=`<tr style="border-bottom:1px solid #eee"><td style="padding:4px">${r.idx+1}</td><td>${r.type}</td><td>${r.dist}m</td><td>${r.height}m</td><td>${r.obsAngle.toFixed(2)}°</td><td class="${r.clearance<0?'fail':r.clearance<5?'warn':'pass'}">${r.clearance.toFixed(2)}°</td><td>${status}</td><td>${inPath}</td></tr>`;
+    });
+    html+='</table>';
+    document.getElementById('obsResults').innerHTML=html;
+
+    // Draw visualizations
+    drawSideView(feedH,totalAntH,satElev,results);
+    drawAzSweep(satAz,results);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIDE VIEW — Clear Engineering Diagram
+// ═══════════════════════════════════════════════════════════
+function drawSideView(feedH,antTopH,satElev,results){
+    const canvas=document.getElementById('sideCanvas');
+    canvas.width=900;canvas.height=400;
+    const ctx=canvas.getContext('2d');
+    const W=canvas.width,H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    const dia=parseFloat(document.getElementById('antDia').value)||7.6;
+    const pedH=parseFloat(document.getElementById('antPedH').value)||2;
+    const maxDist=Math.max(...results.map(r=>r.dist),20);
+    const maxH=Math.max(...results.map(r=>r.height),antTopH+2,15);
+
+    const margin={left:80,right:40,top:40,bottom:60};
+    const plotW=W-margin.left-margin.right;
+    const plotH=H-margin.top-margin.bottom;
+    const scaleX=plotW/(maxDist*1.3);
+    const scaleY=plotH/(maxH*1.1);
+
+    function xPos(d){return margin.left+d*scaleX;}
+    function yPos(h){return H-margin.bottom-h*scaleY;}
+
+    // Ground line
+    ctx.strokeStyle='#333';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(margin.left-20,yPos(0));ctx.lineTo(W-margin.right,yPos(0));ctx.stroke();
+    // Ground hatching
+    ctx.strokeStyle='#999';ctx.lineWidth=0.5;
+    for(let x=margin.left-20;x<W-margin.right;x+=10){
+        ctx.beginPath();ctx.moveTo(x,yPos(0));ctx.lineTo(x-5,yPos(0)+8);ctx.stroke();
+    }
+
+    // Y-axis scale
+    ctx.fillStyle='#666';ctx.font='9px sans-serif';ctx.textAlign='right';
+    for(let h=0;h<=maxH;h+=Math.ceil(maxH/5)){
+        ctx.fillText(h+'m',margin.left-25,yPos(h)+3);
+        ctx.strokeStyle='#eee';ctx.lineWidth=0.5;
+        ctx.beginPath();ctx.moveTo(margin.left-15,yPos(h));ctx.lineTo(W-margin.right,yPos(h));ctx.stroke();
+    }
+    ctx.textAlign='left';
+
+    // Antenna position at x=0
+    const antX=xPos(0);
+    const antBotY=yPos(0);
+    const antFeedY=yPos(feedH);
+    const antTopY=yPos(antTopH);
+
+    // Draw antenna pedestal (kingpost style)
+    ctx.strokeStyle='#1565C0';ctx.lineWidth=2.5;
+    // Base plate
+    ctx.fillStyle='#90CAF9';
+    ctx.fillRect(antX-12,antBotY-3,24,3);
+    ctx.strokeRect(antX-12,antBotY-3,24,3);
+    // Kingpost (vertical tube)
+    ctx.beginPath();ctx.moveTo(antX-4,antBotY-3);ctx.lineTo(antX-4,yPos(pedH));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(antX+4,antBotY-3);ctx.lineTo(antX+4,yPos(pedH));ctx.stroke();
+    // Az/El mount box
+    ctx.fillStyle='#BBDEFB';
+    ctx.fillRect(antX-8,yPos(pedH)-6,16,12);
+    ctx.strokeRect(antX-8,yPos(pedH)-6,16,12);
+
+    // Draw dish (parabolic reflector — proper shape at elevation angle)
+    const dishR=dia/2*scaleY;
+    const dishDepth=dishR*0.25; // parabolic depth (concave toward satellite)
+    ctx.strokeStyle='#1565C0';ctx.lineWidth=3;
+    ctx.beginPath();
+    const elRad=satElev*Math.PI/180;
+    // Draw parabola cross-section rotated by elevation
+    // The dish is concave (bowl shape) opening toward the satellite
+    // px is NEGATIVE so the dish curves AWAY from satellite (back of dish toward pedestal)
+    for(let t=-1;t<=1;t+=0.03){
+        const py=t*dishR; // position along dish rim (perpendicular to boresight)
+        const px=-(t*t)*dishDepth; // NEGATIVE = back of dish (vertex closer to pedestal)
+        // Rotate by elevation angle (boresight points up-right toward satellite)
+        const rx=px*Math.cos(elRad)-py*Math.sin(elRad);
+        const ry=px*Math.sin(elRad)+py*Math.cos(elRad);
+        if(t===-1) ctx.moveTo(antX+rx,antFeedY-ry);
+        else ctx.lineTo(antX+rx,antFeedY-ry);
+    }
+    ctx.stroke();
+
+    // Feed arm (struts from dish rim to feed point in front of dish)
+    const focalDist=dishR*0.45; // focal length (in front of dish, toward satellite)
+    const feedTipX=antX+focalDist*Math.cos(elRad);
+    const feedTipY=antFeedY-focalDist*Math.sin(elRad);
+    ctx.strokeStyle='#1565C0';ctx.lineWidth=1.5;
+    // Top strut (from upper rim of dish to feed)
+    const rimTopX=antX-(-dishDepth)*Math.cos(elRad)-dishR*0.6*Math.sin(elRad);
+    const rimTopY=antFeedY+(-dishDepth)*Math.sin(elRad)+dishR*0.6*Math.cos(elRad);
+    ctx.beginPath();ctx.moveTo(rimTopX,rimTopY);ctx.lineTo(feedTipX,feedTipY);ctx.stroke();
+    // Bottom strut (from lower rim of dish to feed)
+    const rimBotX=antX-(-dishDepth)*Math.cos(elRad)+dishR*0.6*Math.sin(elRad);
+    const rimBotY=antFeedY+(-dishDepth)*Math.sin(elRad)-dishR*0.6*Math.cos(elRad);
+    ctx.beginPath();ctx.moveTo(rimBotX,rimBotY);ctx.lineTo(feedTipX,feedTipY);ctx.stroke();
+
+    // Feed/subreflector (small circle at focal point)
+    ctx.fillStyle='#E65100';
+    ctx.beginPath();ctx.arc(feedTipX,feedTipY,4,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#E65100';ctx.lineWidth=1;ctx.stroke();
+
+    // Antenna label
+    ctx.fillStyle='#1565C0';ctx.font='bold 10px sans-serif';
+    ctx.fillText(dia+'m Antenna',antX-20,antTopY-10);
+    ctx.fillText('Feed: '+feedH+'m',antX-20,antFeedY-dishR-5);
+
+    // Satellite LOS line — from feed point UP at elevation angle
+    // Draw it from feed to top-right corner, staying ABOVE all obstructions
+    ctx.strokeStyle='#4CAF50';ctx.lineWidth=1.5;ctx.setLineDash([8,4]);
+    const losEndX=W-margin.right;
+    const losRise=Math.tan(elRad)*(losEndX-antX);
+    const losEndY=antFeedY-losRise;
+    // Only draw the LOS line segment that's above the canvas top margin
+    const clippedEndY=Math.max(losEndY,margin.top-10);
+    const clippedEndX=clippedEndY===losEndY?losEndX:antX+(antFeedY-clippedEndY)/Math.tan(elRad);
+    ctx.beginPath();ctx.moveTo(antX,antFeedY);ctx.lineTo(clippedEndX,clippedEndY);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#4CAF50';ctx.font='bold 10px sans-serif';
+    ctx.fillText('Sat LOS (El: '+satElev+'°)',clippedEndX-120,clippedEndY-5);
+
+    // Elevation angle arc at antenna
+    ctx.strokeStyle='#4CAF50';ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.arc(antX,antFeedY,50,0,-elRad,true);
+    ctx.stroke();
+    ctx.fillStyle='#333';ctx.font='10px sans-serif';
+    ctx.fillText(satElev+'°',antX+55,antFeedY-20);
+
+    // Draw obstructions
+    results.forEach(r=>{
+        const x=xPos(r.dist);
+        const y0=yPos(0);
+        const y1=yPos(r.height);
+        const w=Math.max(15,r.width?r.width*scaleX*0.3:20);
+
+        // Obstruction angle line from feed to top of obstruction
+        ctx.strokeStyle=r.pass?'rgba(76,175,80,0.5)':'#D32F2F';
+        ctx.lineWidth=1;ctx.setLineDash([4,3]);
+        ctx.beginPath();ctx.moveTo(antX,antFeedY);ctx.lineTo(x,y1);ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw obstruction shape
+        if(r.type==='Building'){
+            const bw=Math.max(18,Math.min(40,r.width?r.width*scaleX*0.15:r.dist*scaleX*0.08));
+            const bh=y0-y1;
+            // Main structure
+            ctx.fillStyle='#E0E0E0';ctx.strokeStyle='#424242';ctx.lineWidth=1.5;
+            ctx.fillRect(x-bw/2,y1,bw,bh);ctx.strokeRect(x-bw/2,y1,bw,bh);
+            // Roof cap
+            ctx.fillStyle='#616161';
+            ctx.fillRect(x-bw/2-2,y1-3,bw+4,4);
+            // Windows (rows and columns)
+            const floors=Math.max(1,Math.round(r.height/3.5));
+            const cols=Math.max(2,Math.round(bw/8));
+            const winW=bw/(cols*2.2);
+            const winH=bh/(floors*2.8);
+            ctx.fillStyle='#B3E5FC';ctx.strokeStyle='#78909C';ctx.lineWidth=0.5;
+            for(let f=0;f<floors;f++){
+                const fy=y1+6+(f*(bh-10)/floors);
+                for(let c=0;c<cols;c++){
+                    const fx=x-bw/2+6+(c*(bw-10)/cols);
+                    ctx.fillRect(fx,fy,winW,winH);
+                    ctx.strokeRect(fx,fy,winW,winH);
+                }
+            }
+            // Base / entrance
+            ctx.fillStyle='#795548';
+            ctx.fillRect(x-3,y0-8,6,8);
+        } else if(r.type==='Tree'){
+            // Realistic tree with natural trunk, branches, and leafy canopy
+            const totalH=y0-y1;
+            const trunkH=totalH*0.4;  // trunk is 40% of total height
+            const canopyH=totalH*0.7; // canopy occupies top 70%
+            const trunkBaseW=Math.max(5,totalH*0.04);
+            const trunkTopW=trunkBaseW*0.5;
+            const canopyW=Math.max(20,Math.min(totalH*0.5,50));
+            const canopyBottom=y0-trunkH*0.7; // canopy starts overlapping trunk slightly
+            const canopyTop=y1;
+            const canopyCY=(canopyBottom+canopyTop)/2;
+
+            // Trunk — natural tapered shape with slight curve
+            ctx.fillStyle='#4E342E';
+            ctx.beginPath();
+            ctx.moveTo(x-trunkBaseW,y0);
+            ctx.quadraticCurveTo(x-trunkBaseW*0.9,y0-trunkH*0.5,x-trunkTopW,y0-trunkH);
+            ctx.lineTo(x+trunkTopW,y0-trunkH);
+            ctx.quadraticCurveTo(x+trunkBaseW*0.9,y0-trunkH*0.5,x+trunkBaseW,y0);
+            ctx.closePath();ctx.fill();
+            // Trunk bark texture (vertical lines)
+            ctx.strokeStyle='#3E2723';ctx.lineWidth=0.5;
+            for(let i=-1;i<=1;i++){
+                ctx.beginPath();
+                ctx.moveTo(x+i*trunkBaseW*0.4,y0);
+                ctx.quadraticCurveTo(x+i*trunkTopW*0.4,y0-trunkH*0.5,x+i*trunkTopW*0.3,y0-trunkH);
+                ctx.stroke();
+            }
+
+            // Main branches extending into canopy
+            ctx.strokeStyle='#5D4037';ctx.lineWidth=2;
+            // Left branch
+            ctx.beginPath();
+            ctx.moveTo(x-trunkTopW*0.5,y0-trunkH*0.8);
+            ctx.quadraticCurveTo(x-canopyW*0.3,canopyCY+canopyH*0.15,x-canopyW*0.35,canopyCY);
+            ctx.stroke();
+            // Right branch
+            ctx.beginPath();
+            ctx.moveTo(x+trunkTopW*0.5,y0-trunkH*0.85);
+            ctx.quadraticCurveTo(x+canopyW*0.25,canopyCY+canopyH*0.1,x+canopyW*0.3,canopyCY+canopyH*0.05);
+            ctx.stroke();
+
+            // Canopy — irregular bush-like shape using multiple organic blobs
+            // Shadow layer (darker, slightly offset)
+            ctx.fillStyle='#1B5E20';
+            ctx.beginPath();
+            ctx.ellipse(x+2,canopyCY+3,canopyW*0.48,canopyH*0.34,0,0,Math.PI*2);
+            ctx.fill();
+
+            // Main canopy mass — multiple overlapping ellipses for natural look
+            ctx.fillStyle='#388E3C';
+            ctx.beginPath();
+            ctx.ellipse(x,canopyCY,canopyW*0.45,canopyH*0.32,0,0,Math.PI*2);
+            ctx.fill();
+            // Left lobe
+            ctx.fillStyle='#43A047';
+            ctx.beginPath();
+            ctx.ellipse(x-canopyW*0.22,canopyCY+canopyH*0.05,canopyW*0.32,canopyH*0.28,0.2,0,Math.PI*2);
+            ctx.fill();
+            // Right lobe
+            ctx.beginPath();
+            ctx.ellipse(x+canopyW*0.2,canopyCY+canopyH*0.03,canopyW*0.3,canopyH*0.26,-0.15,0,Math.PI*2);
+            ctx.fill();
+            // Top cluster
+            ctx.fillStyle='#66BB6A';
+            ctx.beginPath();
+            ctx.ellipse(x+canopyW*0.05,canopyCY-canopyH*0.18,canopyW*0.25,canopyH*0.2,0,0,Math.PI*2);
+            ctx.fill();
+            // Bottom-left tuft
+            ctx.fillStyle='#2E7D32';
+            ctx.beginPath();
+            ctx.ellipse(x-canopyW*0.3,canopyCY+canopyH*0.2,canopyW*0.18,canopyH*0.15,0.3,0,Math.PI*2);
+            ctx.fill();
+            // Bottom-right tuft
+            ctx.beginPath();
+            ctx.ellipse(x+canopyW*0.28,canopyCY+canopyH*0.18,canopyW*0.16,canopyH*0.14,-0.2,0,Math.PI*2);
+            ctx.fill();
+
+            // Canopy outline (irregular, bumpy edge)
+            ctx.strokeStyle='#1B5E20';ctx.lineWidth=1.2;
+            ctx.beginPath();
+            const pts=24;
+            for(let i=0;i<=pts;i++){
+                const angle=(i/pts)*Math.PI*2;
+                const rx=canopyW*0.47*(1+0.1*Math.sin(angle*5));
+                const ry=canopyH*0.34*(1+0.08*Math.cos(angle*7));
+                const px=x+rx*Math.cos(angle);
+                const py=canopyCY+ry*Math.sin(angle);
+                if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+            }
+            ctx.stroke();
+
+            // Highlight spots (light dapples on canopy)
+            ctx.fillStyle='rgba(129,199,132,0.5)';
+            ctx.beginPath();ctx.ellipse(x-canopyW*0.15,canopyCY-canopyH*0.1,canopyW*0.08,canopyH*0.06,0.5,0,Math.PI*2);ctx.fill();
+            ctx.beginPath();ctx.ellipse(x+canopyW*0.1,canopyCY-canopyH*0.15,canopyW*0.06,canopyH*0.05,-0.3,0,Math.PI*2);ctx.fill();
+
+            // Root flare at trunk base
+            ctx.fillStyle='#4E342E';
+            ctx.beginPath();
+            ctx.ellipse(x,y0-1,trunkBaseW*1.5,3,0,0,Math.PI);
+            ctx.fill();
+
+            // Top point marker (actual measured height)
+            ctx.fillStyle='#D32F2F';
+            ctx.beginPath();ctx.arc(x,y1,3,0,Math.PI*2);ctx.fill();
+            ctx.strokeStyle='#D32F2F';ctx.lineWidth=0.8;
+            ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x,y1-6);ctx.stroke();
+
+        } else if(r.type==='Electric Pole'){
+            // Wooden utility pole with crossarm and insulators
+            const poleW=3;
+            // Pole (wooden, slightly tapered)
+            ctx.fillStyle='#6D4C41';
+            ctx.beginPath();
+            ctx.moveTo(x-poleW,y0);
+            ctx.lineTo(x-poleW*0.7,y1+8);
+            ctx.lineTo(x+poleW*0.7,y1+8);
+            ctx.lineTo(x+poleW,y0);
+            ctx.closePath();ctx.fill();
+            ctx.strokeStyle='#4E342E';ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(x-poleW,y0);ctx.lineTo(x-poleW*0.7,y1+8);ctx.lineTo(x+poleW*0.7,y1+8);ctx.lineTo(x+poleW,y0);ctx.closePath();ctx.stroke();
+            // Wood grain lines
+            ctx.strokeStyle='#5D4037';ctx.lineWidth=0.4;
+            for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+i*poleW*0.3,y0);ctx.lineTo(x+i*poleW*0.2,y1+8);ctx.stroke();}
+            // Crossarm
+            const armW=18;
+            const armY=y1+10;
+            ctx.fillStyle='#795548';
+            ctx.fillRect(x-armW,armY-2,armW*2,4);
+            ctx.strokeStyle='#4E342E';ctx.lineWidth=1;
+            ctx.strokeRect(x-armW,armY-2,armW*2,4);
+            // Insulators (3 on each side)
+            ctx.fillStyle='#26C6DA';ctx.strokeStyle='#00838F';ctx.lineWidth=0.8;
+            for(let i=-1;i<=1;i++){
+                const ix=x+i*armW*0.7;
+                ctx.beginPath();ctx.arc(ix,armY-4,2.5,0,Math.PI*2);ctx.fill();ctx.stroke();
+                // Wire drooping from insulator
+                ctx.strokeStyle='#333';ctx.lineWidth=0.6;
+                ctx.beginPath();ctx.moveTo(ix-12,armY-4);ctx.quadraticCurveTo(ix,armY+3,ix+12,armY-4);ctx.stroke();
+                ctx.strokeStyle='#00838F';
+            }
+            // Pole cap
+            ctx.fillStyle='#4E342E';
+            ctx.beginPath();ctx.arc(x,y1+8,poleW*0.8,0,Math.PI*2);ctx.fill();
+
+        } else if(r.type==='Power Line'){
+            // Power line represented as towers with drooping cables
+            const towerW=6;
+            // Lattice tower structure
+            ctx.strokeStyle='#546E7A';ctx.lineWidth=1.5;
+            // Two legs
+            ctx.beginPath();ctx.moveTo(x-towerW,y0);ctx.lineTo(x-2,y1+5);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(x+towerW,y0);ctx.lineTo(x+2,y1+5);ctx.stroke();
+            // Cross bracing
+            const braces=4;
+            for(let b=0;b<braces;b++){
+                const by1=y0-(b/braces)*(y0-y1-5);
+                const by2=y0-((b+1)/braces)*(y0-y1-5);
+                const lx1=x-towerW+(b/braces)*(towerW-2);
+                const lx2=x-towerW+((b+1)/braces)*(towerW-2);
+                const rx1=x+towerW-(b/braces)*(towerW-2);
+                const rx2=x+towerW-((b+1)/braces)*(towerW-2);
+                ctx.beginPath();ctx.moveTo(lx1,by1);ctx.lineTo(rx2,by2);ctx.stroke();
+                ctx.beginPath();ctx.moveTo(rx1,by1);ctx.lineTo(lx2,by2);ctx.stroke();
+            }
+            // Top crossarm
+            ctx.strokeStyle='#37474F';ctx.lineWidth=2;
+            ctx.beginPath();ctx.moveTo(x-14,y1+5);ctx.lineTo(x+14,y1+5);ctx.stroke();
+            // Wires (catenary curves going off both sides)
+            ctx.strokeStyle='#333';ctx.lineWidth=1;
+            for(let wi=-1;wi<=1;wi++){
+                const wx=x+wi*10;
+                ctx.beginPath();
+                ctx.moveTo(wx-30,y1+5);
+                ctx.quadraticCurveTo(wx,y1+25,wx+30,y1+5);
+                ctx.stroke();
+            }
+
+        } else if(r.type==='Power Grid Tower'){
+            // Tall lattice transmission tower
+            const baseW=12;
+            const topW=4;
+            const towerH=y0-y1;
+            // Main legs (trapezoidal)
+            ctx.strokeStyle='#455A64';ctx.lineWidth=2;
+            ctx.beginPath();ctx.moveTo(x-baseW,y0);ctx.lineTo(x-topW,y1);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(x+baseW,y0);ctx.lineTo(x+topW,y1);ctx.stroke();
+            // Horizontal members
+            ctx.lineWidth=1;
+            const sections=6;
+            for(let s=0;s<=sections;s++){
+                const sy=y0-(s/sections)*towerH;
+                const sw=baseW-(s/sections)*(baseW-topW);
+                ctx.beginPath();ctx.moveTo(x-sw,sy);ctx.lineTo(x+sw,sy);ctx.stroke();
+            }
+            // X-bracing
+            ctx.strokeStyle='#607D8B';ctx.lineWidth=0.8;
+            for(let s=0;s<sections;s++){
+                const sy1=y0-(s/sections)*towerH;
+                const sy2=y0-((s+1)/sections)*towerH;
+                const sw1=baseW-(s/sections)*(baseW-topW);
+                const sw2=baseW-((s+1)/sections)*(baseW-topW);
+                ctx.beginPath();ctx.moveTo(x-sw1,sy1);ctx.lineTo(x+sw2,sy2);ctx.stroke();
+                ctx.beginPath();ctx.moveTo(x+sw1,sy1);ctx.lineTo(x-sw2,sy2);ctx.stroke();
+            }
+            // Crossarms (3 levels)
+            ctx.strokeStyle='#455A64';ctx.lineWidth=1.5;
+            const armLevels=[0.85,0.7,0.55];
+            armLevels.forEach(lv=>{
+                const ay=y0-lv*towerH;
+                const aw=topW+(baseW-topW)*(1-lv)+8;
+                ctx.beginPath();ctx.moveTo(x-aw,ay);ctx.lineTo(x+aw,ay);ctx.stroke();
+                // Insulators hanging
+                ctx.fillStyle='#80CBC4';
+                ctx.beginPath();ctx.arc(x-aw,ay+3,2,0,Math.PI*2);ctx.fill();
+                ctx.beginPath();ctx.arc(x+aw,ay+3,2,0,Math.PI*2);ctx.fill();
+            });
+            // Peak
+            ctx.fillStyle='#F44336';
+            ctx.beginPath();ctx.arc(x,y1,3,0,Math.PI*2);ctx.fill();
+
+        } else if(r.type==='Antenna'){
+            // Draw nearby antenna as obstruction — realistic pedestal + dish
+            const pedTopY=y0-(y0-y1)*0.35;
+            // Pedestal/tower
+            ctx.fillStyle='#BBDEFB';ctx.strokeStyle='#7B1FA2';ctx.lineWidth=2;
+            ctx.fillRect(x-3,pedTopY,6,y0-pedTopY);
+            ctx.strokeRect(x-3,pedTopY,6,y0-pedTopY);
+            // Mount
+            ctx.fillStyle='#7B1FA2';
+            ctx.fillRect(x-6,pedTopY-4,12,6);
+            // Dish (parabolic curve)
+            const obsR=Math.min((y0-y1)*0.3,22);
+            ctx.strokeStyle='#7B1FA2';ctx.lineWidth=2.5;
+            ctx.beginPath();
+            for(let t=-1;t<=1;t+=0.05){
+                const py=t*obsR;
+                const px=(t*t)*obsR*0.2;
+                const dx=x+px;
+                const dy=pedTopY-6-obsR*0.5+py*0.7;
+                if(t===-1)ctx.moveTo(dx,dy);else ctx.lineTo(dx,dy);
+            }
+            ctx.stroke();
+            // Feed
+            ctx.fillStyle='#E65100';
+            ctx.beginPath();ctx.arc(x+obsR*0.3,pedTopY-6-obsR*0.5,2.5,0,Math.PI*2);ctx.fill();
+            // Struts
+            ctx.strokeStyle='#7B1FA2';ctx.lineWidth=0.8;
+            ctx.beginPath();ctx.moveTo(x,pedTopY-6-obsR*0.9);ctx.lineTo(x+obsR*0.3,pedTopY-6-obsR*0.5);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(x,pedTopY-6-obsR*0.1);ctx.lineTo(x+obsR*0.3,pedTopY-6-obsR*0.5);ctx.stroke();
+
+        } else if(r.type==='Airport'){
+            // Airport clearance zone — dashed boundary with plane icon
+            ctx.strokeStyle='#FF6F00';ctx.lineWidth=2;ctx.setLineDash([8,4]);
+            ctx.beginPath();ctx.moveTo(x-20,y1);ctx.lineTo(x+20,y1);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(x-15,y0);ctx.lineTo(x-15,y1);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(x+15,y0);ctx.lineTo(x+15,y1);ctx.stroke();
+            ctx.setLineDash([]);
+            // Plane icon
+            ctx.fillStyle='#FF6F00';ctx.font='16px sans-serif';ctx.textAlign='center';
+            ctx.fillText('✈',x,y1-5);ctx.textAlign='left';
+
+        } else {
+            // Misc obstruction — simple post with flag marker
+            ctx.strokeStyle='#555';ctx.lineWidth=2.5;
+            ctx.beginPath();ctx.moveTo(x,y0);ctx.lineTo(x,y1);ctx.stroke();
+            // Flag/marker at top
+            ctx.fillStyle='#FF5722';
+            ctx.beginPath();
+            ctx.moveTo(x,y1);ctx.lineTo(x+12,y1+5);ctx.lineTo(x,y1+10);ctx.closePath();ctx.fill();
+            // Base plate
+            ctx.fillStyle='#757575';
+            ctx.fillRect(x-6,y0-3,12,3);
+        }
+
+        // Height dimension (right side)
+        ctx.strokeStyle='#E91E63';ctx.lineWidth=0.8;
+        ctx.beginPath();ctx.moveTo(x+w/2+8,y0);ctx.lineTo(x+w/2+8,y1);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x+w/2+5,y0);ctx.lineTo(x+w/2+11,y0);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x+w/2+5,y1);ctx.lineTo(x+w/2+11,y1);ctx.stroke();
+        ctx.fillStyle='#E91E63';ctx.font='9px sans-serif';
+        ctx.fillText(r.height+'m',x+w/2+13,(y0+y1)/2+3);
+
+        // Labels
+        ctx.fillStyle='#333';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+        ctx.fillText(r.type,x,y1-8);
+        ctx.font='9px sans-serif';
+        ctx.fillText(r.dist+'m from ant.',x,y0+14);
+        // Clearance
+        const clrColor=r.pass?'#2E7D32':'#D32F2F';
+        ctx.fillStyle=clrColor;ctx.font='bold 9px sans-serif';
+        ctx.fillText((r.pass?'✓ ':'✗ ')+r.clearance.toFixed(1)+'° clearance',x,y1-20);
+        ctx.textAlign='left';
+    });
+
+    // Title
+    ctx.fillStyle='#333';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('SIDE VIEW — LOS OBSTRUCTION ANALYSIS (dimensions in meters)',W/2,H-15);
+    ctx.textAlign='left';
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// PLAN VIEW — Top-down Engineering Drawing
+// ═══════════════════════════════════════════════════════════
+function drawAzSweep(satAz,results){
+    const canvas=document.getElementById('azCanvas');
+    canvas.width=800;canvas.height=500;
+    const ctx=canvas.getContext('2d');
+    const W=canvas.width,H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    const dia=parseFloat(document.getElementById('antDia').value)||7.6;
+    const maxDist=Math.max(...results.map(r=>r.dist),30);
+    const centerX=W/2,centerY=H/2+20;
+    const scale=Math.min((W-100)/(maxDist*2.5),(H-100)/(maxDist*2.5));
+
+    // North arrow
+    ctx.strokeStyle='#333';ctx.lineWidth=2;ctx.fillStyle='#333';
+    const naX=W-50,naY=50;
+    ctx.beginPath();ctx.moveTo(naX,naY+20);ctx.lineTo(naX,naY-20);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(naX-6,naY-12);ctx.lineTo(naX,naY-20);ctx.lineTo(naX+6,naY-12);ctx.fill();
+    ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('N',naX,naY-25);
+    ctx.textAlign='left';
+
+    // Antenna circle (plan view — dish aperture)
+    const antR=dia/2*scale;
+    ctx.strokeStyle='#C62828';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(centerX,centerY,antR,0,Math.PI*2);ctx.stroke();
+    // Dish mesh pattern (like the reference)
+    ctx.strokeStyle='#C62828';ctx.lineWidth=0.5;
+    for(let a=0;a<360;a+=30){
+        const rad=a*Math.PI/180;
+        ctx.beginPath();ctx.moveTo(centerX,centerY);ctx.lineTo(centerX+antR*Math.sin(rad),centerY-antR*Math.cos(rad));ctx.stroke();
+    }
+    // Inner rings
+    ctx.beginPath();ctx.arc(centerX,centerY,antR*0.5,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.arc(centerX,centerY,antR*0.25,0,Math.PI*2);ctx.stroke();
+
+    // Feed support struts (4 legs)
+    ctx.strokeStyle='#C62828';ctx.lineWidth=1.5;
+    for(let a=45;a<360;a+=90){
+        const rad=a*Math.PI/180;
+        ctx.beginPath();ctx.moveTo(centerX+antR*0.2*Math.sin(rad),centerY-antR*0.2*Math.cos(rad));
+        ctx.lineTo(centerX+antR*0.85*Math.sin(rad),centerY-antR*0.85*Math.cos(rad));ctx.stroke();
+    }
+    // Feed center point
+    ctx.fillStyle='#C62828';ctx.beginPath();ctx.arc(centerX,centerY,3,0,Math.PI*2);ctx.fill();
+
+    // Antenna label
+    ctx.fillStyle='#C62828';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+    ctx.fillText(dia.toFixed(1)+'m DIA',centerX,centerY+antR+15);
+    ctx.textAlign='left';
+
+    // Satellite azimuth line
+    const satRad=(satAz-90)*Math.PI/180; // Rotate so 0°=North=up
+    const satAzRad=satAz*Math.PI/180;
+    ctx.strokeStyle='#E91E63';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+    const satLineLen=maxDist*scale*1.5;
+    ctx.beginPath();ctx.moveTo(centerX,centerY);
+    ctx.lineTo(centerX+satLineLen*Math.sin(satAzRad),centerY-satLineLen*Math.cos(satAzRad));ctx.stroke();
+    ctx.setLineDash([]);
+    // Azimuth label
+    ctx.fillStyle='#E91E63';ctx.font='bold 10px sans-serif';
+    const labelX=centerX+satLineLen*0.7*Math.sin(satAzRad);
+    const labelY=centerY-satLineLen*0.7*Math.cos(satAzRad);
+    ctx.fillText('SAT Az: '+satAz+'°',labelX+5,labelY);
+
+    // Draw obstructions as plan shapes
+    results.forEach(r=>{
+        if(isNaN(r.bearing)) return;
+        const bRad=r.bearing*Math.PI/180;
+        const ow=Math.max(10,r.width?r.width*scale/2:8);
+
+        if(r.type==='Building'){
+            // Position the NEAR EDGE of the building at the specified distance
+            const nearEdgeDist=r.dist*scale;
+            const bDepth=r.depth?r.depth*scale:Math.min(ow*1.4,nearEdgeDist*0.3);
+            const bWidth=r.width?r.width*scale:Math.min(ow*2,nearEdgeDist*0.5);
+            // Building center placed at distance + half its depth (so near face is at distance)
+            const buildingCenterDist=nearEdgeDist+bDepth/2;
+            const ox=centerX+buildingCenterDist*Math.sin(bRad);
+            const oy=centerY-buildingCenterDist*Math.cos(bRad);
+
+            // Auto-orient: building wide face perpendicular to bearing (facing antenna)
+            // Orient field = additional rotation offset from that default
+            const autoOrient=r.bearing; // perpendicular to antenna-building line
+            const orientRad=(autoOrient+(r.orient||0))*Math.PI/180;
+            ctx.save();
+            ctx.translate(ox,oy);
+            ctx.rotate(orientRad);
+            ctx.fillStyle='rgba(158,158,158,0.4)';ctx.strokeStyle='#333';ctx.lineWidth=1.5;
+            ctx.fillRect(-bWidth/2,-bDepth/2,bWidth,bDepth);
+            ctx.strokeRect(-bWidth/2,-bDepth/2,bWidth,bDepth);
+            // Hatching
+            ctx.strokeStyle='#999';ctx.lineWidth=0.5;
+            for(let h=-bWidth/2;h<bWidth/2;h+=5){ctx.beginPath();ctx.moveTo(h,-bDepth/2);ctx.lineTo(h+bDepth,bDepth/2);ctx.stroke();}
+            ctx.restore();
+
+            // Draw corner bearing lines for verification (if corners specified)
+            if(r.corner1!==null&&r.corner2!==null){
+                ctx.strokeStyle='#FF9800';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+                const c1Rad=r.corner1*Math.PI/180;
+                const c2Rad=r.corner2*Math.PI/180;
+                const cLen=buildingCenterDist*1.3;
+                // Corner 1 line
+                ctx.beginPath();ctx.moveTo(centerX,centerY);
+                ctx.lineTo(centerX+cLen*Math.sin(c1Rad),centerY-cLen*Math.cos(c1Rad));ctx.stroke();
+                // Corner 2 line
+                ctx.beginPath();ctx.moveTo(centerX,centerY);
+                ctx.lineTo(centerX+cLen*Math.sin(c2Rad),centerY-cLen*Math.cos(c2Rad));ctx.stroke();
+                ctx.setLineDash([]);
+                // Labels
+                ctx.fillStyle='#FF9800';ctx.font='bold 9px sans-serif';
+                const c1x=centerX+cLen*0.6*Math.sin(c1Rad);
+                const c1y=centerY-cLen*0.6*Math.cos(c1Rad);
+                ctx.fillText(r.corner1+'°',c1x+3,c1y);
+                const c2x=centerX+cLen*0.6*Math.sin(c2Rad);
+                const c2y=centerY-cLen*0.6*Math.cos(c2Rad);
+                ctx.fillText(r.corner2+'°',c2x+3,c2y);
+            }
+        } else if(r.type==='Tree'){
+            const ox=centerX+r.dist*scale*Math.sin(bRad);
+            const oy=centerY-r.dist*scale*Math.cos(bRad);
+            ctx.fillStyle='rgba(46,125,50,0.3)';ctx.strokeStyle='#2E7D32';ctx.lineWidth=1.5;
+            ctx.beginPath();ctx.arc(ox,oy,ow,0,Math.PI*2);ctx.fill();ctx.stroke();
+        } else {
+            const ox=centerX+r.dist*scale*Math.sin(bRad);
+            const oy=centerY-r.dist*scale*Math.cos(bRad);
+            ctx.fillStyle='rgba(244,67,54,0.2)';ctx.strokeStyle='#D32F2F';ctx.lineWidth=1.5;
+            ctx.beginPath();ctx.arc(ox,oy,ow*0.5,0,Math.PI*2);ctx.fill();ctx.stroke();
+            // X mark for poles/towers
+            ctx.beginPath();ctx.moveTo(ox-4,oy-4);ctx.lineTo(ox+4,oy+4);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(ox+4,oy-4);ctx.lineTo(ox-4,oy+4);ctx.stroke();
+        }
+
+        // Distance dimension line from antenna center to obstruction point
+        const dimOx=centerX+r.dist*scale*Math.sin(bRad);
+        const dimOy=centerY-r.dist*scale*Math.cos(bRad);
+        ctx.strokeStyle='#E91E63';ctx.lineWidth=0.5;ctx.setLineDash([2,2]);
+        ctx.beginPath();ctx.moveTo(centerX,centerY);ctx.lineTo(dimOx,dimOy);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle='#333';ctx.font='9px sans-serif';ctx.textAlign='center';
+        ctx.fillText(r.type+' ('+r.dist+'m)',dimOx,dimOy+ow+12);
+        ctx.textAlign='left';
+    });
+
+    // Compass ring (light)
+    ctx.strokeStyle='#ddd';ctx.lineWidth=0.5;
+    const compR=maxDist*scale*1.1;
+    ctx.beginPath();ctx.arc(centerX,centerY,compR,0,Math.PI*2);ctx.stroke();
+    // Cardinal directions
+    ctx.fillStyle='#999';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText('0°',centerX,centerY-compR-5);
+    ctx.fillText('90°',centerX+compR+12,centerY+3);
+    ctx.fillText('180°',centerX,centerY+compR+12);
+    ctx.fillText('270°',centerX-compR-12,centerY+3);
+    ctx.textAlign='left';
+
+    // Title
+    ctx.fillStyle='#333';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('PLAN VIEW — ANTENNA & OBSTRUCTIONS',W/2,H-10);
+    ctx.textAlign='left';
+}
+</script>
+</body>
+</html>
